@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <!-- fonts -->
+    <link rel="stylesheet" href="https://bit.ly/3CZa0Sz" type="text/css" charset="utf-8" />
+    <!-- bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js" integrity="sha384-w76AqPfDkMBDXo30jS1Sgez6pr3x5MlQ1ZAGC+nuZB+EYdgRZgiwxhTBTkF7CXvN" crossorigin="anonymous"></script>
+    <!-- fontawesome -->
+    <script src="https://kit.fontawesome.com/cff090c1e3.js" crossorigin="anonymous"></script>
+    <!-- liff --> 
+    <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/versions/2.21.4/sdk.js"></script>
+    <!-- sweetalert2 -->
+    <script src="//cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.8.5"></script>
+    <!-- swiper -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@8/swiper-bundle.min.js"></script>
+    
+    <!-- block head -->
+    {% block head %} {% endblock %}
+    <!-- block title -->
+    {% block title %}<title></title>{% endblock %}
+</head>
+<body style="background-color: #ffffff; font-family: 'line_seed_sans_th'; margin-top: 70px; margin-bottom: 85px;">
+
+
+    {% include 'navbar-top.html' %}
+    <div class="container">
+        {% include 'messages.html' %}
+        <!-- block content -->
+        {% block content %}{% endblock %}
+    </div>
+    {% include 'navbar-bottom.html' %}
+
+    <!-- LIFF -->
+    <script>
+        async function main() {
+            liff.ready.then(() => {
+              if (liff.isInClient()) {
+      
+              } else {
+                  // liff.login()
+              }
+            })
+            await liff.init({ liffId: "1656180859-N3MpgwlE" })
+          }
+        main()
+    </script>
+    <!-- HTMX -->
+    <script>
+        document.body.addActivityListener('htmx:configRequest', (e) => {
+          e.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+          })
+    </script>
+</body>
+</html>

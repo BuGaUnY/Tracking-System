@@ -1,0 +1,52 @@
+{% load date_th %}
+
+{% if ticket %}
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="text-center mt-2 mb-2">
+            <img id="img_profile" 
+                src="{{ticket.profile.image.url}}" 
+                class="card-img-top" alt="{{ticket.ticket_profile}}"
+                style="width: 135px;height: 135px;object-fit: cover;border-radius: 50%;">
+        </div> 
+        <h5 class="card-title">{{ticket.event.title}}</h5>
+        <p class="card-text"> สถานะการลงทะเบียน :
+            {% if ticket.status == 'รอตรวจสอบ' %}
+                    <span class="text-warning">รอตรวจสอบ</span>
+                {% elif ticket.status == 'ยืนยันแล้ว' %}
+                    <span class="text-success">ยืนยันแล้ว</span>
+                {% elif ticket.status == 'ยกเลิก' %}
+                    <span class="text-danger">ยกเลิก</span>
+                {% elif ticket.status == 'ยังไม่ชำระเงิน' %}
+                    <span class="text-danger">ยังไม่ชำระเงิน</span>
+                {% endif %}
+          </p>
+        <p class="card-text">ชื่อ : {{ticket.first_name}} {{ticket.last_name}}</p>
+        <p class="card-text">วันที่ลงทะเบียน : {{ticket.date_create|date_th}}</p>
+        <p class="card-text">
+            {% if ticket.checkin %}
+                <div class="alert alert-success mt-3" role="alert">
+                    ✅ เช็คอินเรียบร้อยแล้ว
+                </div>
+            {% else %}
+                <div class="alert alert-warning mt-3" role="alert">
+                    ❌ ยังไม่เช็คอิน
+                </div>
+                <button class="btn btn-primary"
+                    hx-post="{% url 'ticket-checkin-success' %}"
+                    hx-trigger="click"
+                    hx-target="#check-in-partials"
+                    hx-include="[name='ticket_uid']"
+                >
+                    เช็คอิน
+                </button>
+
+            {% endif %}
+        </p>
+    </div>
+</div>
+{% else %} 
+<div class="alert alert-warning mt-3" role="alert">
+    ❌ ไม่พบข้อมูล
+</div> 
+{% endif %}

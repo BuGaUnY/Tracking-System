@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load date_th %}
+{% load humanize %}
+{% load crispy_forms_tags %}
+
+{% block title %}<title>Activity | Search</title>{% endblock %}
+
+{% block content %}
+<div class="card mb-2 p-3">
+    <form method="get">
+        {{ filter.form|crispy }}
+        <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div class="card-body">
+  
+     <h5 class="card-title">ผลการค้นหา Activity</h5>
+     {% if filter.qs %}
+     <table class="table">
+        <thead>
+          <tr>
+            <th scope="col">งาน</th>
+            <th scope="col">ประเภทงาน</th>
+            <th scope="col">วันที่จัด</th>
+          </tr>
+        </thead>
+        <tbody>
+        {% for obj in filter.qs %}
+          <tr>
+            <td><a href="{{obj.get_absolute_url}}" class="text-decoration-none">{{obj.title}}</a></td>
+            <td>{{obj.activity_category}}</td>
+            <td>{{obj.date_start|date_th}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="alert alert-warning mt-3" role="alert">
+        ❌ ไม่พบข้อมูล
+    </div> 
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

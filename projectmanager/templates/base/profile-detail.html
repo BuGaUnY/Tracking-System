@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load date_th %}
+{% load tz %}
+
+{% block title %}<title>Profile | {{profile}}</title>{% endblock %}
+
+
+{% block content %}
+<div class="card-body bg-body-tertiary p-4 rounded">
+    <div class="text-center">
+        <img src="{{profile.image.url}}" alt="avatar"
+        class="rounded-circle img-fluid" style="width: 150px; height:150px; object-fit: cover;">
+    </div>
+    <div class="border p-3 bg-body-secondary mt-3 mb-3 rounded">
+        
+            <h5 class="my-3">{{profile.first_name}} {{profile.last_name}}</h5>
+            <p class="text-muted mb-1">รหัสนักเรียน-นักศึกษา : {{profile.student_number}}</p>
+            <p class="text-muted mb-1">วัน-เดือน-ปีเกิด : {{profile.birthday|date_th}}</p>
+            <p class="text-muted mb-1">ระดับชั้น : {{profile.degree}}</p>
+            <p class="text-muted mb-1">ห้อง : {{profile.room}}</p>
+            <p class="text-muted mb-1">แผนก : {{profile.department}}</p>
+            <p class="text-muted mb-1">เบอร์โทร : {{profile.phone}}</p>
+            <p class="text-muted mb-3">Email : {{profile.email}}</p>
+    </div>
+        <div class="text-center">
+            <img src="{% url 'generate_qr_code' %}" class="rounded" alt="QR Code">
+        </div>
+    <a href="{% url 'profile-update' %}" class="btn btn-warning"><i class="fa-regular fa-pen-to-square"></i> แก้ไข</a>
+</div>
+
+   <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">การยืนยันตัวตน</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+            1. อัพโหลดรูปถ่าย<br>
+            2. กรอกประวัติครบถ้วน<br>
+            3. รอแอดมินตรวจสอบ<br>
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
+            </div>
+        </div>
+        </div>
+    </div>
+{% endblock %}

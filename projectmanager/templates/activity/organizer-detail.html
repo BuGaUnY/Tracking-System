@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% load date_th %}
+
+{% block title %}<title>Organizer | {{organizer.name}}</title>{% endblock %}
+
+
+{% block content %}
+<img src="{{organizer.image.url}}" class="card-img-top" style="padding: 10px; height:200px; object-fit:scale-down;" alt="{{organizer.name}}">
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{{organizer.name}}</h5>
+        <p class="card-text border p-2 bg-light rounded">{{organizer.description}}</p>
+        <p class="card-text">เบอร์โทรศัพท์ : {{organizer.phone}}</p>
+        <p class="card-text">email : {{organizer.email}}</p>
+        <p class="card-text">เว็บไซต์ : <a href="{{organizer.website}}" class="text-decoration-none">{{organizer.website}}</a></p>
+
+        <table class="table">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Activity</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for activity in activitys %}
+              <tr>
+                <th scope="row">{{forloop.counter}}</th>
+                <td><a href="{{activity.get_absolute_url}}" class="text-decoration-none">{{activity.title}}</a></td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+    </div>
+</div>
+{% endblock %}

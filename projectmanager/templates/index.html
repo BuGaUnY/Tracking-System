@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% block title %}<title>ระบบติดตามสถานะกิจกรรม</title>{% endblock %}
+
+
+{% block content %}
+<div class="px-4 my-5 text-center" >
+  <h3 class="display-6 fw-bold text-black">ระบบติดตามสถานะกิจกรรม นักเรียน นักศึกษา </h3>
+  <h3 class="display-6 fw-bold text-black">วิทยาลัยเทคนิคชัยภูมิ</h3>
+  <h3 class="display-6 lead text-black">Student activity tracking system</h3>
+  <h3 class="display-6 lead text-black">Chaiyaphum Technical College</h3>
+  <div class="col-lg-6 mx-auto mt-4" data-aos="fade-left">
+    <h1 class="display-6 lead mb-4 text-black"></h1>
+    <a href="{% url 'line_login' %}"  class="btn btn-warning"><b>คลิกเพื่อเข้าสู่ระบบ</b></a> 
+    <hr class="text-light mt-4">
+  </div>
+</div>   
+{% endblock %}

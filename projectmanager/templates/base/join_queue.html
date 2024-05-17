@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Queue{% endblock %}
+
+{% block content %}
+<h1>Join Queue</h1>
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Join Queue</button>
+</form>
+{% endblock %}

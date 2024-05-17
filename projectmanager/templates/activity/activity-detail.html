@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load date_th %}
+{% load tz %}
+
+{% block title %}<title>Activity | {{Activity.title}}</title>{% endblock %}
+
+
+{% block content %}
+
+<div class="card">
+    <img src="{{activity.image.url}}" class="card-img-top" style="height:300px; object-fit:scale-down;" alt="{{activity.title}}">
+    <div class="card-body">
+        <h5 class="card-title">{{activity.title}}</h5>
+        <p class="card-text">{{activity.description}}</p>
+        <p class="text-muted">วันที่ : {{activity.date_start|date_th}}</p>
+        <p class="text-muted">เวลา : {{activity.date_start|localtime|time_th }} น.</p>
+        <div class="border p-2 bg-light rounded mb-2">
+            {{activity.detail|safe}}
+</div>
+{% endblock %}

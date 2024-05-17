@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load date_th %}
+{% load tz %}
+
+{% block title %}<title>ประชาสัมพันธ์กิจกรรมพิเศษ</title>{% endblock %}
+
+
+{% block content %}
+<div class="row">
+    <div class="col-12 mb-3">
+        <div class="d-grid gap-2">
+          <a href="{% url 'activity-search' %}" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> ค้นหากิจกรรมพิเศษ</a>
+        </div>
+      </div>
+    {% for activity in activitys %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <img src="{{activity.image.url}}" class="card-img-top" style="height:300px; object-fit:scale-down;" alt="{{activity.title}}">
+            <div class="card-body">
+                <h5 class="card-title">{{activity.title}}</h5>
+                <p class="card-text border p-2 bg-light rounded">{{activity.description}}</p>
+                <p class="text-muted">เริ่ม : {{activity.date_start|date_th}}</p>
+                <p class="text-muted">เวลา : {{activity.date_start|localtime|time_th}} น.</p>
+                <a href="{{activity.get_absolute_url}}" class="btn btn-secondary"><i class="fa-regular fa-pen-to-square"></i> เพิ่มเติม</a>
+                <!-- <a href="{% url 'ticket-create' activity.id %}" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i>  ลงทะเบียน</a> -->
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
