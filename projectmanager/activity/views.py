@@ -1,16 +1,18 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
-from .models import Activity, Organizer, Ticket
+from .models import Activity, Organizer, Ticket , Attendance, AttendanceCheckin
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from .forms import TicketForm
+from .forms import TicketForm, AttendanceCheckinForm
 from django.urls import reverse
 from django.shortcuts import get_object_or_404
 from django_filters.views import FilterView
-from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter
+from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
 import django_filters
 from django import forms
+from datetime import datetime
+from django.http import HttpResponse
 
 org_pk = 123
 ev_pk = 456
@@ -21,8 +23,6 @@ class OrganizerList(ListView):
     template_name = 'activity/organizer-list.html'
     context_object_name = 'organizers'
     ordering = ['-date_create']
-
-
 class OrganizerDetail(DetailView):
     model = Organizer
     template_name = 'activity/organizer-detail.html'
@@ -41,7 +41,6 @@ class OrganizerOwnerList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         return Organizer.objects.filter(owner=self.request.user.profile)
-
 
 class OrganizerOwnerDetail(LoginRequiredMixin, DetailView):
     model = Organizer
@@ -212,3 +211,48 @@ class TicketCheckinSuccess(LoginRequiredMixin, View):
             ticket.checkin = True
             ticket.save()
             return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
+        
+def attendance_checkin(request):
+    if request.method == 'POST':
+        form = AttendanceCheckinForm(request.POST)
+        if form.is_valid():
+            attendance = form.save(commit=False)  # Don't save immediately for potential customization
+            # Optionally, perform additional logic before saving (e.g., setting user, etc.)
+            attendance.save()
+            return redirect('attendance_checkin_success')  # Redirect to success page
+        else:
+            error_message = "There were errors in your submission."  # Set error message here
+    else:
+        form = AttendanceCheckinForm()
+        error_message = None  # Initialize as None in the GET request branch as well
+
+    context = {'form': form, 'error_message': error_message}
+    return render(request, 'attendance/attendance_checkin.html', context)
+
+def attendance_checkin_success(request):
+    return render(request, 'attendance/attendance_checkin_success.html')
+
+
+
+def attendance_report(request):
+    attendances = Attendance.objects.all()  # Fetch all attendances for reference (optional)
+    attendance_data = None  # Initialize as None
+
+    if request.method == 'GET':
+        att_name = request.GET.get('att_name', '')  # Get selected course
+        date_checkin = request.GET.get('date_checkin', '')  # Get selected date
+
+        if att_name:
+            attendance_data = AttendanceCheckin.objects.filter(
+                att_name__pk=att_name,
+                date_checkin=date_checkin
+            ).select_related('att_name')
+        else:
+            attendance_data = AttendanceCheckin.objects.filter(date_checkin=date_checkin).select_related('att_name') if date_checkin else AttendanceCheckin.objects.all().select_related('att_name')
+
+        # Update presence status based on the condition
+        for attendance in attendance_data:
+            attendance.presence = "Present" if attendance.presence == 1 else "Absent"
+
+    context = {'attendances': attendances, 'attendance_data': attendance_data}
+    return render(request, 'attendance/attendance_report.html', context)

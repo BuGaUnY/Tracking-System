@@ -1,5 +1,5 @@
 from django import forms
-from .models import Ticket
+from .models import Ticket, AttendanceCheckin
 
 class TicketForm(forms.ModelForm):
     class Meta:
@@ -16,3 +16,18 @@ class TicketForm(forms.ModelForm):
         self.fields['last_name'].label = "นามสกุล"
         self.fields['phone'].label = "เบอร์โทรศัพท์"
         self.fields['slip'].label = "**หลักฐานการชำระเงิน**"
+
+class AttendanceCheckinForm(forms.ModelForm):
+    class Meta:
+        model = AttendanceCheckin
+        fields = ['user','student_number','first_name','last_name', 'room', 'degree', 'department', 'att_name', 'date_checkin', 'presence']
+        widgets = {
+            'date_checkin': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+        }
+
+
+    def clean_presence(self):
+        presence = self.cleaned_data['presence']
+        if presence not in [0, 1]:
+            raise forms.ValidationError("Presence must be either 0 or 1.")
+        return presence

@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block content %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attendance Check-in Successful</title>
+</head>
+<body>
+  <h1>Attendance Check-in Successful!</h1>
+  <p>Your attendance has been recorded.</p>
+  <a href="{% url 'attendance_report' %}">Go back to Home Page</a>
+  </body>
+</html>
+{% endblock %}

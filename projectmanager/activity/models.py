@@ -7,6 +7,9 @@ from linebot import LineBotApi
 from linebot.models import *
 import uuid
 import qrcode
+from linebot.models import FlexSendMessage
+from django.core.validators import MinValueValidator, MaxValueValidator
+from base.models import Profile
 
 line_bot_api = LineBotApi(settings.channel_access_token)
 # Create your models here.
@@ -28,13 +31,59 @@ ACTIVITY_CATEGORY = (
     ('กิจกรรม ร.ด.', 'กิจกรรม ร.ด.'),
 )
 
-
 TICKET_STATUS = (
     ('รอตรวจสอบ', 'รอตรวจสอบ'),
     ('ยืนยันแล้ว', 'ยืนยันแล้ว'),
     ('ยังไม่ชำระเงิน', 'ยังไม่ชำระเงิน'),
     ('ยกเลิก', 'ยกเลิก'),
 )
+
+class Attendance(models.Model):
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    att_name = models.CharField(max_length=50)
+    credits = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+
+    def __str__(self):
+        return self.att_name
+
+profiles = Profile.objects.all()
+for profile in profiles:
+    first_name = profile.first_name
+    last_name = profile.last_name
+    student_number = profile.student_number
+    room = profile.room
+    degree = profile.degree
+    department = profile.department
+class AttendanceCheckin(models.Model):
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    user = models.ForeignKey(Profile, null=True, on_delete=models.SET_NULL)
+    student_number = models.CharField(max_length=20, null=True, blank=True)
+    first_name = models.CharField(max_length=100, null=True, blank=True)
+    last_name = models.CharField(max_length=100, null=True, blank=True)
+    room = models.CharField(max_length=10, null=True, blank=True)
+    degree = models.CharField(max_length=10, null=True, blank=True)
+    department = models.CharField(max_length=50, null=True, blank=True)
+    att_name = models.ForeignKey(Attendance, related_name='checkins', null=True, on_delete=models.SET_NULL)
+    date_checkin = models.DateTimeField(null=True, blank=True)
+    presence = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(1)])
+
+    class Meta:
+        unique_together = (("student_number", "att_name", "date_checkin"))
+
+    def __str__(self):
+        return f'{self.att_name} {self.first_name} {self.last_name} {self.date_checkin}'
+
+    def save(self, *args, **kwargs):
+        if self.user:
+            # ตรวจสอบว่าโปรไฟล์มีการกำหนดหรือไม่
+            if self.user.first_name and self.user.last_name and self.user.student_number:
+                self.first_name = self.user.first_name
+                self.last_name = self.user.last_name
+                self.student_number = self.user.student_number
+                self.room = self.user.room
+                self.degree = self.user.degree
+                self.department = self.user.department
+        super().save(*args, **kwargs)
 class Organizer(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=255)
@@ -62,7 +111,6 @@ class Organizer(models.Model):
 
     def get_absolute_owner_url(self):
         return reverse('organizer-owner-detail', kwargs={'pk': self.pk})
-
 
 class Activity(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
