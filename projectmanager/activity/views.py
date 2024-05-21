@@ -1,12 +1,13 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Case, CharField, Value, When, F
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from .models import Activity, Organizer, Ticket , Attendance, AttendanceCheckin
+from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
 from .forms import TicketForm, AttendanceCheckinForm
 from django.urls import reverse
-from django.shortcuts import get_object_or_404
 from django_filters.views import FilterView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
 import django_filters
@@ -80,7 +81,7 @@ class OrganizerOwnerActivityTicketList(LoginRequiredMixin, ListView):
     def get_queryset(self):
         return Ticket.objects.filter(
             activity__pk=self.kwargs['pk'],
-             activity__organizer__owner=self.request.user.profile
+             organizer__activity__owner=self.request.user.profile
              )
 
     def get_context_data(self, **kwargs):
@@ -141,8 +142,9 @@ class TicketCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
         profile = self.request.user.profile
         initial['first_name'] = profile.first_name
         initial['last_name'] = profile.last_name
-        initial['email'] = profile.email
-        initial['phone'] = profile.phone
+        initial['room'] = profile.room
+        initial['degree'] = profile.degree
+        initial['department'] = profile.department
         return initial
 
     def form_valid(self, form):
@@ -232,8 +234,6 @@ def attendance_checkin(request):
 def attendance_checkin_success(request):
     return render(request, 'attendance/attendance_checkin_success.html')
 
-
-
 def attendance_report(request):
     attendances = Attendance.objects.all()  # Fetch all attendances for reference (optional)
     attendance_data = None  # Initialize as None
@@ -256,3 +256,28 @@ def attendance_report(request):
 
     context = {'attendances': attendances, 'attendance_data': attendance_data}
     return render(request, 'attendance/attendance_report.html', context)
+
+class AttendanceFilter(FilterSet):
+    class Meta:
+        model = Profile
+        fields = ['room', 'degree', 'department']
+
+        labels = {
+            'room': '',
+            'degree': '',
+            'department': '',
+        }
+def attendancesearch(request):
+    filter = AttendanceFilter(request.GET, queryset=AttendanceCheckin.objects.all())
+    context = {'filter': filter}
+    return render(request, 'attendance/attendance_search.html', context)
+
+
+
+
+
+
+
+
+
+

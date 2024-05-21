@@ -24,11 +24,11 @@
               </tr>
             </thead>
             <tbody>
-            {% for event in events %}
+            {% for activity in activitys %}
               <tr>
                 <th scope="row">{{forloop.counter}}</th>
-                <td><a href="{{event.get_absolute_url}}" class="text-decoration-none">{{event.title}}</a></td>
-                <td><a href="{{event.get_absolute_owner_event_checkin_url}}" class="btn btn-success">Check in</a></td>
+                <td><a href="{{activity.get_absolute_url}}" class="text-decoration-none">{{activity.title}}</a></td>
+                <td><a href="{{activity.get_absolute_owner_activity_checkin_url}}" class="btn btn-success">Check in</a></td>
               </tr>
             {% endfor %}
             </tbody>

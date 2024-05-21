@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load date_th %}  {% load humanize %}  {% load crispy_forms_tags %}
+{% block title %}<title>ค้นหารายชื่อนักเรียน</title>{% endblock %}
+{% block content %}
+
+<div class="card mb-2 p-3">
+  <form method="get">
+    {{filter.form|crispy}}
+    <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> ค้นหา</button>
+  </form>
+</div>
+
+  <div class="card-body">
+    <h5 class="card-title">ผลการค้นหารายชื่อนักเรียน</h5>
+    {% if filter.qs %}
+    <table class="table">
+    <thead>
+        <tr>
+            <th>รหัสนักเรียน</th>
+            <th>ชื่อ-สกุล</th>
+            <th>ห้อง</th>
+            <th>ชั้นปี</th>
+            <th>แผนก</th>
+            <th>กิจกรรม</th>
+            <th>วัน-เวลา</th>
+            <th>สถานะ</th>
+        </tr>
+    </thead>
+    <tbody>
+      {% for attendance in filter.qs %}
+      <tr>
+          <td>{{ attendance.student_number }}</td>
+          <td>{{ attendance.first_name }} {{ attendance.last_name }}</td>
+          <td>{{ attendance.room }}</td>
+          <td>{{ attendance.degree }}</td>
+          <td>{{ attendance.department }}</td>
+          <td>{{ attendance.att_name }}</td>
+          <td>{{ attendance.date_checkin|date_th }} {{ attendance.date_checkin|time_th }} น.</td>
+          <td>
+            {% if attendance.presence == 1 %}
+              Present
+            {% elif attendance.presence == 0 %}
+              Absent
+            {% endif %}
+          </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    {% else %}
+    <div class="alert alert-warning mt-3" role="alert">
+      ❌ ไม่พบข้อมูลนักเรียนที่ตรงกับเงื่อนไขการค้นหา
+    </div>
+    {% endif %}
+  </div>
+<style>
+    table {
+        border-collapse: collapse; /* Combine cell borders */
+        width: 100%; /* Make table fit the container */
+    }
+
+    th, td {
+        padding: 5px; /* Add padding around cell content */
+        border: 1px solid #969696; /* Add thin border */
+    }
+
+    th {
+        text-align: center;
+        background-color: #f0f0f0; /* Highlight table headers */
+    }
+    h1 {
+        text-align: center;
+    }
+    thead {
+        background-color: #f0f0f0; /* Highlight table headers */
+    }
+  </style>
+{% endblock %}

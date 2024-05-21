@@ -29,10 +29,10 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://dev.entv.events/',
-    'https://frame-dev-test.frame-dev.com',
-    'https://api-dev.unicon.site',
-    'https://dev.unicon.site',
+    # 'https://dev.entv.events/',
+    # 'https://frame-dev-test.frame-dev.com',
+    # 'https://api-dev.unicon.site',
+    # 'https://dev.unicon.site',
 ]
 # Application definition
 

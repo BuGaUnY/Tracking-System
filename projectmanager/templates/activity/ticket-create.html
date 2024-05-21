@@ -19,15 +19,7 @@
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
             {{form|crispy}}
-            {% if activity.activity_type == 'free' %}
-                <p class="border p-2 bg-body-secondary rounded mt-2"><em>ราคา : ฟรี</em></p>
-            {% else %}
-                <p class="border p-2 bg-body-secondary rounded mt-2">
-                    <em>ราคา : {{activity.price}} บาท</em> <br>
-                    <em>ชำระผ่าน : {{activity.payment_method}}</em>
-                </p>
-            {% endif %}
-            <p class="border p-2 bg-body-secondary rounded mt-2"><em>ติดต่อ : {{activity.contact}}</em></p>
+            <p class="border p-2 bg-body-secondary rounded mt-2"><em>ติดต่อ : {{activity.organizer}}</em></p>
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i> ลงทะเบียน</button>
             <a href="{% url 'activity-list' %}" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> ยกเลิก</a>
         </form>

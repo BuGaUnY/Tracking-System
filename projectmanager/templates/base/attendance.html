@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load date_th %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>เช็คชื่อผู้เข้าร่วมประชุม</title>
+</head>
+<body>
+    <h1>เช็คชื่อผู้เข้าร่วมประชุม</h1>
+    <form method="post">
+        <label for="room">ห้อง:</label>
+        <input type="text" id="room" name="room" required>
+
+        <label for="degree">ชั้นปี:</label>
+        <input type="text" id="degree" name="degree" required>
+
+        <label for="department">ภาควิชา:</label>
+        <input type="text" id="department" name="department" required>
+
+        <label for="presence">สถานะ:</label>
+        <select id="presence" name="presence" required>
+            <option value="0">ขาด</option>
+            <option value="1">มา</option>
+        </select>
+
+        <button type="submit">เช็คชื่อ</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('form').submit(function(event) {
+                event.preventDefault();
+    
+                $.ajax({
+                    url: '/checkin_users/',
+                    method: 'POST', // ต้องเป็น POST เท่านั้น
+                    data: {
+                        room: $('#room').val(),
+                        degree: $('#degree').val(),
+                        department: $('#department').val(),
+                        presence: $('#presence').val()
+                    },
+                    success: function(response) {
+                        $('#response').html('<p>' + response.message + '</p>');
+                    },
+                    error: function(error) {
+                        console.error(error);
+                        $('#response').html('<p>Error: ' + error.statusText + '</p>');
+                    }
+                });
+            });
+        });
+    </script>
+    
+</body>
+</html>
+{% endblock %}

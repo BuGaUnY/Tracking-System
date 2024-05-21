@@ -14,8 +14,10 @@ class TicketForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['first_name'].label = "ชื่อจริง"
         self.fields['last_name'].label = "นามสกุล"
-        self.fields['phone'].label = "เบอร์โทรศัพท์"
-        self.fields['slip'].label = "**หลักฐานการชำระเงิน**"
+        self.fields['room'].label = "ห้อง"
+        self.fields['degree'].label = "ชั้นปี"
+        self.fields['department'].label = "แผนก"
+
 
 class AttendanceCheckinForm(forms.ModelForm):
     class Meta:

@@ -22,15 +22,6 @@ ACTIVITY_CATEGORY = (
     ('กิจกรรม ร.ด.', 'กิจกรรม ร.ด.'),
 )
 
-ACTIVITY_CATEGORY = (
-    ('กิจกรรมพิเศษ', 'กิจกรรมพิเศษ'),
-    ('กิจกรรมเข้าแถว', 'กิจกรรมเข้าแถว'),
-    ('กิจกรรมชมรม', 'กิจกรรมชมรม'),
-    ('กิจกรรมโฮมรูม', 'กิจกรรมโฮมรูม'),
-    ('กิจกรรมลูกเสือ', 'กิจกรรมลูกเสือ'),
-    ('กิจกรรม ร.ด.', 'กิจกรรม ร.ด.'),
-)
-
 TICKET_STATUS = (
     ('รอตรวจสอบ', 'รอตรวจสอบ'),
     ('ยืนยันแล้ว', 'ยืนยันแล้ว'),
@@ -143,11 +134,11 @@ class Ticket(models.Model):
     uid = models.UUIDField(default = uuid.uuid4, editable=False, unique=True)
     activity = models.ForeignKey(Activity ,on_delete=models.SET_NULL, null=True)
     profile = models.ForeignKey('base.Profile' ,on_delete=models.SET_NULL, null=True ,blank=True, related_name='ticket_profile')
-    first_name = models.CharField(max_length=200)
-    last_name = models.CharField(max_length=200)
-    email = models.EmailField(max_length=100, null=True, blank=True)
-    phone = models.CharField(max_length=20)
-    slip = models.ImageField(upload_to='ticket-slip', default='', null=True, blank=True)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    room = models.CharField(max_length=10)
+    degree = models.CharField(max_length=20)
+    department = models.CharField(max_length=100)
     status = models.CharField(max_length=20,
                                 choices=TICKET_STATUS,
                                 default='รอตรวจสอบ')

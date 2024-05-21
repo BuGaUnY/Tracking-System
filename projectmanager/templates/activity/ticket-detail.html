@@ -12,11 +12,7 @@
     </div>
     <div class="card-body">
         <h5 class="card-title">{{ticket.activity}}</h5>
-        {% if date_start and date_finish %}
-            <p class="text-muted">เริ่ม : {{ date_start|date_th }} ถึง {{ ticket.activity.date_finish|date_th }}</p>
-        {% else %}
-            <p class="text-muted">Date information not available</p>
-        {% endif %}
+            <p class="text-muted">วันที่ : {{ ticket.activity.date_start|date_th }} เวลา : {{ ticket.activity.date_start|time_th }} น.</p>
         <p class="card-text"> สถานะการลงทะเบียน :
             {% if ticket.status == 'รอตรวจสอบ' %}
                     <span class="text-warning">รอตรวจสอบ</span>
@@ -30,33 +26,10 @@
           </p>
           <p class="card-text">ชื่อ : {{ticket.first_name}}</p>
           <p class="card-text">นามสกุล : {{ticket.last_name}}</p>
-          <p class="card-text">เบอร์โทร : {{ticket.phone}}</p>
-          <p class="card-text">อีเมล : {{ticket.email}}</p>
-          {% if ticket.slip %}
-            <p class="card-text">หลักฐานการชำระเงิน : <a href="" data-bs-toggle="modal" data-bs-target="#exampleModal" class="text-decoration-none">คลิก</a></p>
-          {% endif %}
-
+          <p class="card-text">ห้อง : {{ticket.room}}</p>
+          <p class="card-text">ชั้นปี : {{ticket.degree}}</p>
+          <p class="card-text">แผนก : {{ticket.department}}</p>
           <a href="{{ticket.get_absolute_update_url}}" class="btn btn-warning mt-3"><i class="fa-regular fa-pen-to-square"></i> แก้ไข</a>
-    </div>
-</div>
-
-<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-        <div class="modal-header">
-        <h1 class="modal-title fs-5" id="exampleModalLabel">หลักฐานการชำระเงิน</h1>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-        </div>
-        <div class="modal-body">
-            {% if ticket.slip %}
-                <img src="{{ticket.slip.url}}" class="card-img-top img-fluid" alt="{{ticket.ticket_uid}}" style="height: 390px; width: 390px;">
-            {% endif %}
-        </div>
-        <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary">Save changes</button>
-        </div>
-    </div>
     </div>
 </div>
 {% endblock %}

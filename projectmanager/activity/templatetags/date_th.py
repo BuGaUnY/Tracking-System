@@ -36,8 +36,9 @@ def time_th(value):
     if not isinstance(value, (datetime, datetime.time)):
         raise ValueError("Invalid time format. Please provide a datetime or time object.")
 
-    hour = value.hour
-    minute = value.minute
+    hour = str(value.hour).zfill(2)
+    minute = str(value.minute).zfill(2)
 
     return f"{hour}:{minute}"
+
 

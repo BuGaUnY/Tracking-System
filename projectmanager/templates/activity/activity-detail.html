@@ -17,5 +17,8 @@
         <p class="text-muted">เวลา : {{activity.date_start|localtime|time_th }} น.</p>
         <div class="border p-2 bg-light rounded mb-2">
             {{activity.detail|safe}}
-</div>
+        </div>
+        <a href="{% url 'ticket-create' activity.id %}" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i>  ลงทะเบียน</a>
+    </div>
+        
 {% endblock %}

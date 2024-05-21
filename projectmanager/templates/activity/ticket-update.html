@@ -10,15 +10,7 @@
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{form|crispy}}
-        {% if ticket.activity.activity_type == 'free' %}
-            <p class="border p-2 bg-body-secondary rounded mt-2"><em>ราคา : ฟรี</em></p>
-        {% else %}
-            <p class="border p-2 bg-body-secondary rounded mt-2">
-                <em>ราคา : {{ticket.activity.price}} บาท</em> <br>
-                <em>ชำระผ่าน : {{ticket.activity.payment_method}}</em>
-            </p>
-        {% endif %}
-        <p class="border p-2 bg-body-secondary rounded mt-2"><em>ติดต่อ : {{ticket.activity.contact}}</em></p>
+        <p class="border p-2 bg-body-secondary rounded mt-2"><em>ติดต่อ : {{activity.organizer}}</em></p>
         <button type="submit" class="btn btn-success"><i class="fa-regular fa-floppy-disk"></i> บันทึก</button>
         <a href="{{ticket.get_absolute_url}}" class="btn btn-warning"><i class="fa-solid fa-rotate-left"></i> กลับ</a>
     </form>
