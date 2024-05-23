@@ -1,9 +1,11 @@
-#! /usr/bin/env sh
+#!/usr/bin/env sh
 set -e
 
-# cd /app
-# python manage.py makemigrations --noinput 
-
+echo "Starting migration"
 python manage.py migrate --noinput 
+echo "Migration completed"
+
+echo "Starting collectstatic"
 python manage.py collectstatic --noinput
-# ./dumpdata.sh --noinput 
+echo "Collectstatic completed"
+

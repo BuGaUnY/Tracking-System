@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Case, CharField, Value, When, F
+from django.db.models import Count, Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from .models import Activity, Organizer, Ticket , Attendance, AttendanceCheckin
 from base.models import Profile
@@ -14,6 +14,8 @@ import django_filters
 from django import forms
 from datetime import datetime
 from django.http import HttpResponse
+from django.utils import timezone
+import csv
 
 org_pk = 123
 ev_pk = 456
@@ -56,6 +58,8 @@ class OrganizerOwnerDetail(LoginRequiredMixin, DetailView):
         context['activitys'] = Activity.objects.filter(organizer=self.object)
         return context
 
+org_pk = 123
+act_pk = 456
 class OrganizerOwnerActivityCheckin(LoginRequiredMixin, TemplateView):
     template_name = 'activity/organizer-owner-activity-checkin.html'
 
@@ -66,11 +70,12 @@ class OrganizerOwnerActivityCheckin(LoginRequiredMixin, TemplateView):
         context['org_pk'] = self.kwargs['organizer_pk']
         return context
     
-    def OrganizerOwnerActivityCheckin(request, organizer_pk: int, activity_pk: int):
-        org_pk = 'some-organizer-pk'
-        ev_pk = 'some-activity-pk'
+    def post(self, request, *args, **kwargs):
+        org_pk = kwargs['organizer_pk']
+        act_pk = kwargs['activity_pk']
 
-        url = reverse('organizer-owner-activity-checkin', kwargs={'org_pk': org_pk, 'ev_pk': ev_pk})
+        url = reverse('organizer-owner-activity-checkin', kwargs={'organizer_pk': org_pk, 'activity_pk': act_pk})
+        return redirect(url)
 
 class OrganizerOwnerActivityTicketList(LoginRequiredMixin, ListView):
     model = Ticket
@@ -79,14 +84,12 @@ class OrganizerOwnerActivityTicketList(LoginRequiredMixin, ListView):
     ordering = ['-date_create']
 
     def get_queryset(self):
-        return Ticket.objects.filter(
-            activity__pk=self.kwargs['pk'],
-             organizer__activity__owner=self.request.user.profile
-             )
+        activity = get_object_or_404(Activity, pk=self.kwargs['pk'])
+        return Ticket.objects.filter(activity=activity, activity__organizer__owner=self.request.user.profile)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['activity'] = Activity.objects.get(pk=self.kwargs['pk'], organizer__owner=self.request.user.profile)
+        context['activity'] = get_object_or_404(Activity, pk=self.kwargs['pk'], organizer__owner=self.request.user.profile)
         return context
 
 class CustomDateRangeFilter(DateRangeFilter):
@@ -213,23 +216,40 @@ class TicketCheckinSuccess(LoginRequiredMixin, View):
             ticket.checkin = True
             ticket.save()
             return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
-        
-def attendance_checkin(request):
-    if request.method == 'POST':
-        form = AttendanceCheckinForm(request.POST)
-        if form.is_valid():
-            attendance = form.save(commit=False)  # Don't save immediately for potential customization
-            # Optionally, perform additional logic before saving (e.g., setting user, etc.)
-            attendance.save()
-            return redirect('attendance_checkin_success')  # Redirect to success page
-        else:
-            error_message = "There were errors in your submission."  # Set error message here
-    else:
-        form = AttendanceCheckinForm()
-        error_message = None  # Initialize as None in the GET request branch as well
 
-    context = {'form': form, 'error_message': error_message}
+def attendance_checkin(request):
+    rooms = Profile.objects.values_list('room', flat=True).distinct()
+    departments = Profile.objects.values_list('department', flat=True).distinct()
+    att_names = Attendance.objects.values_list('att_name', flat=True).distinct()
+
+    room = request.GET.get('room')
+    department = request.GET.get('department')
+    att_name = request.GET.get('att_name')
+    date_checkin = request.GET.get('date_checkin') 
+
+    checkins = AttendanceCheckin.objects.all()
+
+    if room:
+        checkins = checkins.filter(room=room)
+    if department:
+        checkins = checkins.filter(department=department)
+    if att_name:
+        checkins = checkins.filter(att_name=att_name)
+    if date_checkin:
+        checkins = checkins.filter(date_checkin=date_checkin)
+
+    context = {
+        'checkins': checkins,
+        'rooms': rooms,
+        'departments': departments,
+        'att_names': att_names,
+        'selected_room': room,
+        'selected_department': department,
+        'selected_att_name': att_name,
+        'selected_date_checkin': date_checkin, 
+    }
     return render(request, 'attendance/attendance_checkin.html', context)
+
 
 def attendance_checkin_success(request):
     return render(request, 'attendance/attendance_checkin_success.html')
@@ -256,7 +276,6 @@ def attendance_report(request):
 
     context = {'attendances': attendances, 'attendance_data': attendance_data}
     return render(request, 'attendance/attendance_report.html', context)
-
 class AttendanceFilter(FilterSet):
     class Meta:
         model = Profile
@@ -267,6 +286,7 @@ class AttendanceFilter(FilterSet):
             'degree': '',
             'department': '',
         }
+
 def attendancesearch(request):
     filter = AttendanceFilter(request.GET, queryset=AttendanceCheckin.objects.all())
     context = {'filter': filter}

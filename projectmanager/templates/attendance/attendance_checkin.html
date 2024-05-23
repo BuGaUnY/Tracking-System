@@ -1,17 +1,105 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load date_th %}
 {% load crispy_forms_tags %}
 {% block content %}
-<h1 class="heading">Attendance Check-in</h1>
-    <div class="card-body bg-body-tertiary p-4 rounded">
-        <form method="POST" class="form" enctype="multipart/form-data">
-                {% csrf_token %} {{form|crispy}}
-        <button type="submit" class="btn btn-success">Submit</button>
-        </form>
-    </div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Check-in</title>
+</head>
+<body>
+    <h1>Attendance Check-in</h1>
+
+    <form method="get" id="filterForm">
+        <label for="room">ห้อง:</label>
+        <select id="room" name="room">
+            <option value="">All</option>
+            {% for room_option in rooms %}
+                <option value="{{ room_option }}" {% if room_option == selected_room %} selected {% endif %}>{{ room_option }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="department">แผนก:</label>
+        <select id="department" name="department">
+            <option value="">All</option>
+            {% for department_option in departments %}
+                <option value="{{ department_option }}" {% if department_option == selected_department %} selected {% endif %}>{{ department_option }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="att_name">กิจกรรม:</label>
+        <select id="att_name" name="att_name">
+            <option value="">All</option>
+            {% for att_name_option in att_names %}
+                <option value="{{ att_name_option }}" {% if att_name_option == selected_att_name %} selected {% endif %}>{{ att_name_option }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="date_checkin">วันที่:</label>
+        <input type="date" id="date_checkin" name="date_checkin" value="{{ selected_date_checkin }}">
+
+        <button type="submit" class="btn btn-secondary">ค้นหา</button>
+    </form>
+
+    <h2>Attendance Check-ins:</h2>
+    {% if checkins %}
+    <table id="checkinList">
+        <thead>
+            <tr>
+                <th>รหัสประจำตัว</th>
+                <th>ชื่อ-สกุล</th>
+                <th>ห้อง</th>
+                <th>ชั้นปี</th>
+                <th>แผนก</th>
+                <th>สถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for checkin in checkins %}
+                <tr>
+                    <td>{{ checkin.student_number}}</td>
+                    <td>{{ checkin.first_name }} {{ checkin.last_name }} </td>
+                    <td>{{ checkin.room }}</td>
+                    <td>{{ checkin.degree }}</td>
+                    <td>{{ checkin.department }}</td>
+                    <td>
+                      {% if checkin.presence == 1 %}
+                        Present
+                      {% elif checkin.presence == 0 %}
+                        Absent
+                      {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+        {% else %}
+        <div class="alert alert-warning mt-3" role="alert">
+          ❌ ไม่พบข้อมูลนักเรียนที่ตรงกับเงื่อนไขการค้นหา
+        </div>
+        {% endif %}
+    </table>
+</body>
+</html>
 <style>
+    table {
+        border-collapse: collapse; /* Combine cell borders */
+        width: 100%; /* Make table fit the container */
+    }
+
+    th, td {
+        padding: 5px; /* Add padding around cell content */
+        border: 1px solid #ddd; /* Add thin border */
+    }
+
+    th {
+        text-align: center;
+        background-color: #f0f0f0; /* Highlight table headers */
+    }
     h1 {
         text-align: center;
     }
-</style>
+  </style>
 {% endblock content %}

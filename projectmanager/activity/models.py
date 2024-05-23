@@ -22,12 +22,6 @@ ACTIVITY_CATEGORY = (
     ('กิจกรรม ร.ด.', 'กิจกรรม ร.ด.'),
 )
 
-TICKET_STATUS = (
-    ('รอตรวจสอบ', 'รอตรวจสอบ'),
-    ('ยืนยันแล้ว', 'ยืนยันแล้ว'),
-    ('ยังไม่ชำระเงิน', 'ยังไม่ชำระเงิน'),
-    ('ยกเลิก', 'ยกเลิก'),
-)
 
 class Attendance(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -47,19 +41,20 @@ for profile in profiles:
     department = profile.department
 class AttendanceCheckin(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    user = models.ForeignKey(Profile, null=True, on_delete=models.SET_NULL)
-    student_number = models.CharField(max_length=20, null=True, blank=True)
-    first_name = models.CharField(max_length=100, null=True, blank=True)
-    last_name = models.CharField(max_length=100, null=True, blank=True)
-    room = models.CharField(max_length=10, null=True, blank=True)
-    degree = models.CharField(max_length=10, null=True, blank=True)
-    department = models.CharField(max_length=50, null=True, blank=True)
+    user = models.ForeignKey('base.Profile' ,on_delete=models.SET_NULL, null=True ,blank=True, related_name='attendance_profile')
+    student_number = models.CharField(max_length=20,)
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100)
+    room = models.CharField(max_length=10)
+    degree = models.CharField(max_length=10)
+    department = models.CharField(max_length=50)
     att_name = models.ForeignKey(Attendance, related_name='checkins', null=True, on_delete=models.SET_NULL)
     date_checkin = models.DateTimeField(null=True, blank=True)
-    presence = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(1)])
+    presence = models.IntegerField(choices=[(0, 'Absent'), (1, 'Present')], default=1)
 
     class Meta:
-        unique_together = (("student_number", "att_name", "date_checkin"))
+        unique_together = ('user','att_name',
+        )
 
     def __str__(self):
         return f'{self.att_name} {self.first_name} {self.last_name} {self.date_checkin}'
@@ -75,6 +70,7 @@ class AttendanceCheckin(models.Model):
                 self.degree = self.user.degree
                 self.department = self.user.department
         super().save(*args, **kwargs)
+
 class Organizer(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     name = models.CharField(max_length=255)
@@ -123,9 +119,7 @@ class Activity(models.Model):
         return reverse('activity-detail', kwargs={'pk': self.pk})
 
     def get_absolute_owner_activity_checkin_url(self):
-        if self.organizer:
-            return reverse('organizer-owner-activity-checkin', kwargs={'org_pk': self.organizer.pk, 'ev_pk': self.pk})
-        return '#'
+        return reverse('organizer-owner-activity-checkin', kwargs={'organizer_pk': self.organizer.pk, 'activity_pk': self.pk})
 
     def get_absolute_organizer_owner_activity_ticket_list_url(self):
         return reverse('organizer-owner-activity-ticket-list', kwargs={'pk': self.pk})
@@ -139,9 +133,6 @@ class Ticket(models.Model):
     room = models.CharField(max_length=10)
     degree = models.CharField(max_length=20)
     department = models.CharField(max_length=100)
-    status = models.CharField(max_length=20,
-                                choices=TICKET_STATUS,
-                                default='รอตรวจสอบ')
     checkin = models.BooleanField(default=False)
     qrcode = models.ImageField(upload_to='ticket-qrcode', default='', null=True, blank=True)
     date_updated = models.DateTimeField(auto_now=True, blank=False)

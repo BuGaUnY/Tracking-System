@@ -6,15 +6,6 @@
 
 {% block content %}
 <div class="card-body bg-body-tertiary p-4 rounded">
-    {% if request.user.profile.status == False %}
-            <div class="alert alert-danger" role="alert">
-                <h4 class="alert-heading">คุณยังไม่ได้ยืนยันตัวตน</h4>
-                <p>กรุณายืนยันตัวตนโดยการกรอกข้อมูลและภาพถ่ายที่โปรไฟล์</p>
-                <a href="{% url 'profile-update' %}" class="btn btn-warning"><i class="fa-regular fa-pen-to-square"></i> แก้ไขโปรไฟล์</a>
-                <hr>
-                <p class="mb-0">ติดต่อเจ้าหน้าที่ : 098-3670100</p>
-            </div>
-    {% else %}
         <h1 class="mb-2">{{activity.title}}</h1>
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -23,7 +14,6 @@
             <button type="submit" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i> ลงทะเบียน</button>
             <a href="{% url 'activity-list' %}" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> ยกเลิก</a>
         </form>
-    {% endif %}
 </div>
 
 

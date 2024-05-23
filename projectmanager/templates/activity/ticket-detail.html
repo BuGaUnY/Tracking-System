@@ -13,17 +13,6 @@
     <div class="card-body">
         <h5 class="card-title">{{ticket.activity}}</h5>
             <p class="text-muted">วันที่ : {{ ticket.activity.date_start|date_th }} เวลา : {{ ticket.activity.date_start|time_th }} น.</p>
-        <p class="card-text"> สถานะการลงทะเบียน :
-            {% if ticket.status == 'รอตรวจสอบ' %}
-                    <span class="text-warning">รอตรวจสอบ</span>
-            {% elif ticket.status == 'ยืนยันแล้ว' %}
-                    <span class="text-success">ยืนยันแล้ว</span>
-            {% elif ticket.status == 'ยกเลิก' %}
-                    <span class="text-danger">ยกเลิก</span>
-            {% elif ticket.status == 'ยังไม่ชำระเงิน' %}
-                    <span class="text-danger">ยังไม่ชำระเงิน</span>
-            {% endif %}
-          </p>
           <p class="card-text">ชื่อ : {{ticket.first_name}}</p>
           <p class="card-text">นามสกุล : {{ticket.last_name}}</p>
           <p class="card-text">ห้อง : {{ticket.room}}</p>
