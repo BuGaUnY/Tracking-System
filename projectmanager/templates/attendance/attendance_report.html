@@ -3,27 +3,34 @@
 {% load date_th %}
 {% block content %}
 <title>Attendance Report</title>
-    <style>
-      table {
-          border-collapse: collapse; /* Combine cell borders */
-          width: 100%; /* Make table fit the container */
-      }
+<style>
+    table {
+        border-collapse: collapse;
+        /* Combine cell borders */
+        width: 100%;
+        /* Make table fit the container */
+    }
 
-      th, td {
-          padding: 5px; /* Add padding around cell content */
-          border: 1px solid #ddd; /* Add thin border */
-      }
+    th,
+    td {
+        padding: 5px;
+        /* Add padding around cell content */
+        border: 1px solid #ddd;
+        /* Add thin border */
+    }
 
-      th {
-          text-align: center;
-          background-color: #f0f0f0; /* Highlight table headers */
-      }
-      h1 {
-          text-align: center;
-      }
-    </style>
+    th {
+        text-align: center;
+        background-color: #f0f0f0;
+        /* Highlight table headers */
+    }
+
+    h1 {
+        text-align: center;
+    }
+</style>
 <div class="card-body bg-body-tertiary p-2 rounded">
-  <h1>Attendance Report</h1>
+    <h1>Attendance Report</h1>
     <table>
         <thead>
             <tr>
@@ -39,20 +46,20 @@
         </thead>
         <tbody>
             {% for attendance in attendance_data %}
-                <tr>
-                    <td>{{ attendance.student_number}}</td>
-                    <td>{{ attendance.first_name }} {{ attendance.last_name }} </td>
-                    <td>{{ attendance.room }}</td>
-                    <td>{{ attendance.degree }}</td>
-                    <td>{{ attendance.department }}</td>
-                    <td>{{ attendance.att_name }}</td>
-                    <td>{{ attendance.date_checkin|date_th}} {{ attendance.date_checkin|time_th}}</td>
-                    <td>{{ attendance.presence}}
-                    </td>
-                </tr>
+            <tr>
+                <td>{{ attendance.student_number}}</td>
+                <td>{{ attendance.first_name }} {{ attendance.last_name }} </td>
+                <td>{{ attendance.room }}</td>
+                <td>{{ attendance.degree }}</td>
+                <td>{{ attendance.department }}</td>
+                <td>{{ attendance.att_name }}</td>
+                <td>{{ attendance.date_checkin|date_th}}</td>
+                <td>{{ attendance.presence}}
+                </td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
-  </body>
+    </body>
 </div>
 {% endblock %}

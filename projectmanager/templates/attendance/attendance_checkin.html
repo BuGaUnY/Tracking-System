@@ -3,103 +3,99 @@
 {% load date_th %}
 {% load crispy_forms_tags %}
 {% block content %}
-<!DOCTYPE html>
-<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Attendance Check-in</title>
 </head>
 <body>
     <h1>Attendance Check-in</h1>
-
-    <form method="get" id="filterForm">
+    <form method="get" action="{% url 'attendance_checkin' %}">
         <label for="room">ห้อง:</label>
-        <select id="room" name="room">
+        <select name="room" id="room">
             <option value="">All</option>
-            {% for room_option in rooms %}
-                <option value="{{ room_option }}" {% if room_option == selected_room %} selected {% endif %}>{{ room_option }}</option>
+            {% for room in rooms %}
+                <option value="{{ room }}" {% if room == selected_room %}selected{% endif %}>{{ room }}</option>
             {% endfor %}
         </select>
 
         <label for="department">แผนก:</label>
-        <select id="department" name="department">
+        <select name="department" id="department">
             <option value="">All</option>
-            {% for department_option in departments %}
-                <option value="{{ department_option }}" {% if department_option == selected_department %} selected {% endif %}>{{ department_option }}</option>
+            {% for department in departments %}
+                <option value="{{ department }}" {% if department == selected_department %}selected{% endif %}>{{ department }}</option>
             {% endfor %}
         </select>
-
-        <label for="att_name">กิจกรรม:</label>
-        <select id="att_name" name="att_name">
-            <option value="">All</option>
-            {% for att_name_option in att_names %}
-                <option value="{{ att_name_option }}" {% if att_name_option == selected_att_name %} selected {% endif %}>{{ att_name_option }}</option>
-            {% endfor %}
-        </select>
-
-        <label for="date_checkin">วันที่:</label>
-        <input type="date" id="date_checkin" name="date_checkin" value="{{ selected_date_checkin }}">
-
-        <button type="submit" class="btn btn-secondary">ค้นหา</button>
+        <button type="submit">ค้นหา</button>
     </form>
 
-    <h2>Attendance Check-ins:</h2>
-    {% if checkins %}
-    <table id="checkinList">
-        <thead>
-            <tr>
-                <th>รหัสประจำตัว</th>
-                <th>ชื่อ-สกุล</th>
-                <th>ห้อง</th>
-                <th>ชั้นปี</th>
-                <th>แผนก</th>
-                <th>สถานะ</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for checkin in checkins %}
+    <form method="post" action="{% url 'save_attendance_checkin' %}">
+        {% csrf_token %}
+        <table>
+            <thead>
                 <tr>
-                    <td>{{ checkin.student_number}}</td>
-                    <td>{{ checkin.first_name }} {{ checkin.last_name }} </td>
-                    <td>{{ checkin.room }}</td>
-                    <td>{{ checkin.degree }}</td>
-                    <td>{{ checkin.department }}</td>
-                    <td>
-                      {% if checkin.presence == 1 %}
-                        Present
-                      {% elif checkin.presence == 0 %}
-                        Absent
-                      {% endif %}
-                    </td>
+                    <th>Student Number</th>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Room</th>
+                    <th>Degree</th>
+                    <th>Department</th>
+                    <th>Attendance</th>
                 </tr>
+            </thead>
+            <tbody>
+                {% for profile in profiles %}
+                    <tr>
+                        <td>{{ profile.student_number }}</td>
+                        <td>{{ profile.first_name }}</td>
+                        <td>{{ profile.last_name }}</td>
+                        <td>{{ profile.room }}</td>
+                        <td>{{ profile.degree }}</td>
+                        <td>{{ profile.department }}</td>
+                        <td>
+                            <input type="checkbox" name="student_numbers" value="{{ profile.student_number }}" checked>
+                            <input type="hidden" name="presence" value="1"> <!-- Assuming presence is checked by default -->
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <label for="att_name">ชื่อกิจกรรม:</label>
+        <select name="att_name" id="att_name">
+            <option value="">All</option>
+            {% for att_name in att_names %}
+                <option value="{{ att_name }}" {% if att_name == selected_att_name %}selected{% endif %}>{{ att_name }}</option>
             {% endfor %}
-        </tbody>
-        {% else %}
-        <div class="alert alert-warning mt-3" role="alert">
-          ❌ ไม่พบข้อมูลนักเรียนที่ตรงกับเงื่อนไขการค้นหา
-        </div>
-        {% endif %}
-    </table>
+        </select>
+        
+        <input type="hidden" name="att_name" value="{{ selected_att_name }}"> <!-- Pass selected att_name as hidden input -->
+
+        <label for="date_checkin">วันที่:</label>
+        <input type="date" name="date_checkin" id="date_checkin" required>
+
+        <button type="submit">บันทึกการเช็คชื่อ</button>
+    </form>
 </body>
-</html>
 <style>
     table {
-        border-collapse: collapse; /* Combine cell borders */
-        width: 100%; /* Make table fit the container */
+      border-collapse: collapse; /* Combine cell borders */
+      width: 100%; /* Make table fit the container */
     }
-
-    th, td {
-        padding: 5px; /* Add padding around cell content */
-        border: 1px solid #ddd; /* Add thin border */
+  
+    th,
+    td {
+      padding: 5px; /* Add padding around cell content */
+      border: 1px solid #ddd; /* Add thin border */
     }
-
+  
     th {
-        text-align: center;
-        background-color: #f0f0f0; /* Highlight table headers */
+      text-align: center;
+      background-color: #f0f0f0; /* Highlight table headers */
     }
     h1 {
-        text-align: center;
+      text-align: center;
     }
-  </style>
-{% endblock content %}
+    td input[type="checkbox"] {
+      margin: auto; /* Center the checkbox horizontally */
+      display: block; /* Make the checkbox block-level */
+    }
+    </style>
+{% endblock %}

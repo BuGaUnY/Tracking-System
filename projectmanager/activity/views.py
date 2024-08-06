@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.dateparse import parse_date
 from django.db.models import Count, Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from .models import Activity, Organizer, Ticket , Attendance, AttendanceCheckin
@@ -13,7 +14,7 @@ from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, 
 import django_filters
 from django import forms
 from datetime import datetime
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseBadRequest
 from django.utils import timezone
 import csv
 
@@ -216,40 +217,69 @@ class TicketCheckinSuccess(LoginRequiredMixin, View):
             ticket.checkin = True
             ticket.save()
             return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
-
+ 
 def attendance_checkin(request):
     rooms = Profile.objects.values_list('room', flat=True).distinct()
     departments = Profile.objects.values_list('department', flat=True).distinct()
-    att_names = Attendance.objects.values_list('att_name', flat=True).distinct()
 
     room = request.GET.get('room')
     department = request.GET.get('department')
-    att_name = request.GET.get('att_name')
-    date_checkin = request.GET.get('date_checkin') 
 
-    checkins = AttendanceCheckin.objects.all()
-
+    profiles = Profile.objects.all()
     if room:
-        checkins = checkins.filter(room=room)
+        profiles = profiles.filter(room=room)
     if department:
-        checkins = checkins.filter(department=department)
-    if att_name:
-        checkins = checkins.filter(att_name=att_name)
-    if date_checkin:
-        checkins = checkins.filter(date_checkin=date_checkin)
+        profiles = profiles.filter(department=department)
+
+    selected_room = room
+    selected_department = department
 
     context = {
-        'checkins': checkins,
+        'profiles': profiles,
         'rooms': rooms,
         'departments': departments,
-        'att_names': att_names,
-        'selected_room': room,
-        'selected_department': department,
-        'selected_att_name': att_name,
-        'selected_date_checkin': date_checkin, 
+        'selected_room': selected_room,
+        'selected_department': selected_department,
     }
     return render(request, 'attendance/attendance_checkin.html', context)
 
+def save_attendance_checkin(request):
+    if request.method == 'POST':
+        att_name = request.POST.get('att_name')
+        date_checkin = request.POST.get('date_checkin')
+        student_numbers = request.POST.getlist('student_numbers')
+
+        # Validate input
+        if not att_name or not date_checkin or not student_numbers:
+            return render(request, 'attendance/attendance_checkin.html', {'error': 'Please fill in all fields'})
+
+        # Fetch the Attendance instance by att_name
+        try:
+            attendance = Attendance.objects.get(att_name=att_name)
+        except Attendance.DoesNotExist:
+            return render(request, 'attendance/attendance_checkin.html', {'error': 'Attendance not found'})
+
+        # Save attendance check-ins for selected students
+        for student_number in student_numbers:
+            try:
+                profile = Profile.objects.get(student_number=student_number)
+                attendance_checkin = AttendanceCheckin.objects.create(
+                    student_number=profile.student_number,
+                    first_name=profile.first_name,
+                    last_name=profile.last_name,
+                    room=profile.room,
+                    degree=profile.degree,
+                    department=profile.department,
+                    att_name=attendance,
+                    date_checkin=date_checkin,
+                    presence=True  # Assuming it's checked by default
+                )
+            except Profile.DoesNotExist:
+                return render(request, 'attendance/attendance_checkin.html', {'error': f'Profile not found for student number: {student_number}'})
+
+        return redirect('attendance_checkin_success')
+
+    return render(request, 'attendance/attendance_checkin.html')
 
 def attendance_checkin_success(request):
     return render(request, 'attendance/attendance_checkin_success.html')

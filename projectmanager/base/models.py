@@ -214,3 +214,8 @@ class Profile(models.Model):
             line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
         super().save(*args, **kwargs)
 
+class Attendance(models.Model):
+    student = models.ForeignKey(Profile, on_delete=models.CASCADE)
+    date = models.DateTimeField(auto_now_add=True)
+    status = models.BooleanField(default=False)
+
