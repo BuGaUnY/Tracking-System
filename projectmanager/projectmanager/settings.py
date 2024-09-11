@@ -33,6 +33,8 @@ CSRF_TRUSTED_ORIGINS = [
     # 'https://frame-dev-test.frame-dev.com',
     # 'https://api-dev.unicon.site',
     # 'https://dev.unicon.site',
+    'https://bugauny.pythonanywhere.com',
+    'https://liff.line.me',
 ]
 # Application definition
 
@@ -191,8 +193,8 @@ LOGIN_REDIRECT_URL = '/'
 SOCIALACCOUNT_PROVIDERS = {
     'line': {
             'APP': {
-                  'client_id': '2002380689',
-                  'secret': 'Uc9e08f44b16b1dc4a853e11045493564'
+                  'client_id': '2006304809',
+                  'secret': '2ad755bcdce337aa003e625ea886159e',
             },
             "SCOPE": ['profile', 'openid', 'email']
     },
@@ -224,7 +226,7 @@ CKEDITOR_CONFIGS = {
 
 domain_media = 'https://frame-dev-test.frame-dev.com/media'
 # domain_media = 'https://dev.entv.events/media'
-domain_liff = 'https://liff.line.me/2002380689-XgO1yaA5'
+domain_liff = 'https://liff.line.me/2006304809-k4W7Wdro'
 
 # MAPBOX
 if os.name == 'nt':

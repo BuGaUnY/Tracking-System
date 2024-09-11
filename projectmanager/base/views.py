@@ -1,13 +1,12 @@
-from django.shortcuts import render
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
 from django_filters.views import FilterView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse
-from .forms import ProfileForm
-from django.shortcuts import render, redirect
-from .models import Profile
+from .forms import ProfileForm, AttendanceForm
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Profile, Attendance
 import django_filters
 import qrcode
 from django.http import HttpResponse
@@ -40,6 +39,17 @@ class ProfielUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 class StudentListView(ListView):
     model = Profile
     template_name = 'base/students.html'
+
+def get(self, request):
+    students = Profile.objects.all()
+    return render(request, 'your_template.html', {'object_list': students})
+
+def post(self, request):
+    student_id = request.POST.get('student_id')
+    student = get_object_or_404(Profile, id=student_id)
+    attendance = Attendance(student=student, status=True)
+    attendance.save()
+    return redirect('student-list')
     
 def generate_qr_code(request):
     data = "Profile"

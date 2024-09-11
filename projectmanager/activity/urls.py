@@ -19,6 +19,7 @@ urlpatterns = [
     path('ticket/checkin/', views.TicketCheckin.as_view(), name='ticket-checkin'),
     path('ticket/checkin/success', views.TicketCheckinSuccess.as_view(), name='ticket-checkin-success'),
     path('attendance/checkin/', views.attendance_checkin, name='attendance_checkin'),
+    path('attendance/checkin/save/', views.save_attendance_checkin, name='save_attendance_checkin'),
     path('attendance/report/', views.attendance_report, name='attendance_report'),
     path('attendance/checkin/success/', views.attendance_checkin_success, name='attendance_checkin_success'),
     path('attendance/search/', views.attendancesearch, name='attendance_search'),

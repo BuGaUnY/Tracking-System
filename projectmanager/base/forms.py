@@ -1,5 +1,5 @@
 from django import forms
-from .models import Profile
+from .models import Profile, Attendance
 
 class ProfileForm(forms.ModelForm):
     class Meta:
@@ -43,3 +43,11 @@ class ProfileForm(forms.ModelForm):
 
     #     if not image and not first_name and not last_name and not birthday and not email and not phone and not address and not status and not pdpa:
     #         raise forms.ValidationError('You have to write something!')
+
+class AttendanceForm(forms.ModelForm):
+    class Meta:
+        model = Attendance
+        fields = ['status']
+        widgets = {
+            'status': forms.CheckboxInput(attrs={'class': 'center'}),
+        }
