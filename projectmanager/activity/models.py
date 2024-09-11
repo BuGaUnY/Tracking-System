@@ -11,7 +11,8 @@ from linebot.models import FlexSendMessage
 from django.core.validators import MinValueValidator, MaxValueValidator
 from base.models import Profile
 
-line_bot_api = LineBotApi(settings.channel_access_token)
+# line_bot_api = LineBotApi(settings.channel_access_token)
+
 # Create your models here.
 ACTIVITY_CATEGORY = (
     ('กิจกรรมพิเศษ', 'กิจกรรมพิเศษ'),
@@ -161,133 +162,133 @@ class Ticket(models.Model):
         qr.add_data(self.uid)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-        with open(f'media/ticket-qrcode/{self.uid}.png', 'wb') as f:
-            img.save(f)
-        self.qrcode = f'ticket-qrcode/{self.uid}.png'
-        if self.checkin == True and self.__original_checkin == False:
-            social_user = SocialAccount.objects.get(user=self.profile.user)
-            flex_message = FlexSendMessage(
-                alt_text='Checkin',
-                contents={
-                        "type": "bubble",
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "md",
-                            "contents": [
-                            {
-                                "type": "text",
-                                "text": f"{ self.activity.title }",
-                                "wrap": True,
-                                "weight": "bold",
-                                "gravity": "center",
-                                "size": "xl"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "margin": "lg",
-                                "spacing": "sm",
-                                "contents": [
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "ชื่อ",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": f"{ self.first_name } { self.last_name }",
-                                        "wrap": True,
-                                        "color": "#666666",
-                                        "size": "sm",
-                                        "flex": 4
-                                    }
-                                    ]
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "เวลา",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": f"{ self.date_updated.strftime('%d/%m/%Y %H:%M') }",
-                                        "wrap": True,
-                                        "size": "sm",
-                                        "color": "#666666",
-                                        "flex": 4
-                                    }
-                                    ]
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "สถานะ",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": "เช็คอินแล้ว",
-                                        "wrap": True,
-                                        "color": "#17c950",
-                                        "size": "sm",
-                                        "flex": 4
-                                    }
-                                    ]
-                                }
-                                ]
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "margin": "xxl",
-                                "contents": [
-                                {
-                                    "type": "image",
-                                    "url": f"{settings.domain_media}/{self.qrcode}",
-                                    "aspectMode": "cover",
-                                    "size": "4xl",
-                                    "margin": "md"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "You can enter the theater by using this code instead of a ticket",
-                                    "color": "#aaaaaa",
-                                    "wrap": True,
-                                    "margin": "xxl",
-                                    "size": "xs"
-                                }
-                                ]
-                            }
-                            ]
-                        }
-                        })
-            line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
-        super().save(*args, **kwargs)
+    #     with open(f'media/ticket-qrcode/{self.uid}.png', 'wb') as f:
+    #         img.save(f)
+    #     self.qrcode = f'ticket-qrcode/{self.uid}.png'
+    #     if self.checkin == True and self.__original_checkin == False:
+    #         social_user = SocialAccount.objects.get(user=self.profile.user)
+    #         flex_message = FlexSendMessage(
+    #             alt_text='Checkin',
+    #             contents={
+    #                     "type": "bubble",
+    #                     "body": {
+    #                         "type": "box",
+    #                         "layout": "vertical",
+    #                         "spacing": "md",
+    #                         "contents": [
+    #                         {
+    #                             "type": "text",
+    #                             "text": f"{ self.activity.title }",
+    #                             "wrap": True,
+    #                             "weight": "bold",
+    #                             "gravity": "center",
+    #                             "size": "xl"
+    #                         },
+    #                         {
+    #                             "type": "box",
+    #                             "layout": "vertical",
+    #                             "margin": "lg",
+    #                             "spacing": "sm",
+    #                             "contents": [
+    #                             {
+    #                                 "type": "box",
+    #                                 "layout": "baseline",
+    #                                 "spacing": "sm",
+    #                                 "contents": [
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": "ชื่อ",
+    #                                     "color": "#aaaaaa",
+    #                                     "size": "sm",
+    #                                     "flex": 1
+    #                                 },
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": f"{ self.first_name } { self.last_name }",
+    #                                     "wrap": True,
+    #                                     "color": "#666666",
+    #                                     "size": "sm",
+    #                                     "flex": 4
+    #                                 }
+    #                                 ]
+    #                             },
+    #                             {
+    #                                 "type": "box",
+    #                                 "layout": "baseline",
+    #                                 "spacing": "sm",
+    #                                 "contents": [
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": "เวลา",
+    #                                     "color": "#aaaaaa",
+    #                                     "size": "sm",
+    #                                     "flex": 1
+    #                                 },
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": f"{ self.date_updated.strftime('%d/%m/%Y %H:%M') }",
+    #                                     "wrap": True,
+    #                                     "size": "sm",
+    #                                     "color": "#666666",
+    #                                     "flex": 4
+    #                                 }
+    #                                 ]
+    #                             },
+    #                             {
+    #                                 "type": "box",
+    #                                 "layout": "baseline",
+    #                                 "spacing": "sm",
+    #                                 "contents": [
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": "สถานะ",
+    #                                     "color": "#aaaaaa",
+    #                                     "size": "sm",
+    #                                     "flex": 1
+    #                                 },
+    #                                 {
+    #                                     "type": "text",
+    #                                     "text": "เช็คอินแล้ว",
+    #                                     "wrap": True,
+    #                                     "color": "#17c950",
+    #                                     "size": "sm",
+    #                                     "flex": 4
+    #                                 }
+    #                                 ]
+    #                             }
+    #                             ]
+    #                         },
+    #                         {
+    #                             "type": "box",
+    #                             "layout": "vertical",
+    #                             "margin": "xxl",
+    #                             "contents": [
+    #                             {
+    #                                 "type": "image",
+    #                                 "url": f"{settings.domain_media}/{self.qrcode}",
+    #                                 "aspectMode": "cover",
+    #                                 "size": "4xl",
+    #                                 "margin": "md"
+    #                             },
+    #                             {
+    #                                 "type": "text",
+    #                                 "text": "You can enter the theater by using this code instead of a ticket",
+    #                                 "color": "#aaaaaa",
+    #                                 "wrap": True,
+    #                                 "margin": "xxl",
+    #                                 "size": "xs"
+    #                             }
+    #                             ]
+    #                         }
+    #                         ]
+    #                     }
+    #                     })
+    #         line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
+    #     super().save(*args, **kwargs)
     
-    def get_absolute_url(self):
-        return reverse('ticket-detail', kwargs={'pk': self.pk})
+    # def get_absolute_url(self):
+    #     return reverse('ticket-detail', kwargs={'pk': self.pk})
     
-    def get_absolute_update_url(self):
-        return reverse('ticket-update', kwargs={'pk': self.pk})
+    # def get_absolute_update_url(self):
+    #     return reverse('ticket-update', kwargs={'pk': self.pk})
     

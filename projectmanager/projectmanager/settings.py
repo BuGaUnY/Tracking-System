@@ -191,8 +191,8 @@ LOGIN_REDIRECT_URL = '/'
 SOCIALACCOUNT_PROVIDERS = {
     'line': {
             'APP': {
-                  'client_id': '1656180859',
-                  'secret': '4f4eb02f526a45409e9aaf8c686c700e'
+                  'client_id': '2002380689',
+                  'secret': 'Uc9e08f44b16b1dc4a853e11045493564'
             },
             "SCOPE": ['profile', 'openid', 'email']
     },
@@ -218,13 +218,13 @@ CKEDITOR_CONFIGS = {
     },
 }
 
-# LINE
-channel_access_token = 'f45bC3kWUn7IkGi6HKTqQ+5estYC0uhyz4t+YBSQ3ABJRzoQg9V2FUkQkgFWLzdXld4SK1DQExeC78nf+vzQTal4xSSAORFAk0/64i600YaN1iPTqNTNUrWyTWuOzxFuOt96tAi3Q3CmUZ0WxHm4kwdB04t89/1O/w1cDnyilFU='
-channel_secret = '23f5dcafa843cf0e53d644701638b2bd'
+# LINE Messaging API
+# channel_access_token = 'f45bC3kWUn7IkGi6HKTqQ+5estYC0uhyz4t+YBSQ3ABJRzoQg9V2FUkQkgFWLzdXld4SK1DQExeC78nf+vzQTal4xSSAORFAk0/64i600YaN1iPTqNTNUrWyTWuOzxFuOt96tAi3Q3CmUZ0WxHm4kwdB04t89/1O/w1cDnyilFU='
+# channel_secret = 'deaddb80853cf5a78fb2ae159fddba5b'
 
 domain_media = 'https://frame-dev-test.frame-dev.com/media'
 # domain_media = 'https://dev.entv.events/media'
-domain_liff = 'https://liff.line.me/1656180859-N3MpgwlE'
+domain_liff = 'https://liff.line.me/2002380689-XgO1yaA5'
 
 # MAPBOX
 if os.name == 'nt':
@@ -232,20 +232,20 @@ if os.name == 'nt':
     os.environ['PATH'] = os.path.join(VIRTUAL_ENV_BASE, r'.\Lib\site-packages\osgeo') + ';' + os.environ['PATH']
     os.environ['PROJ_LIB'] = os.path.join(VIRTUAL_ENV_BASE, r'.\Lib\site-packages\osgeo\data\proj') + ';' + os.environ['PATH']
 
-MAPBOX_KEY = 'pk.eyJ1IjoiZnJhbWVmMzE4IiwiYSI6ImNsNXh4NmExczAyODUzZG55anp1eHl3azQifQ.dUtvypHWk8UfMNgJe-aP8A'
-default_map_attrs = {  
-    "style": "mapbox://styles/mapbox/outdoors-v11",
-    "zoom": 13,
-    "center": [103.64099592061046, 16.04194018075107],
-    "cursor_style": 'pointer',
-    "marker_color": "red",
-    "rotate": False,
-    "geocoder": True,
-    "fullscreen_button": True,
-    "navigation_buttons": True,
-    "track_location_button": True, 
-    "readonly": True,
-    "placeholder": "Pick a location on map below", 
-    "language": "auto",
-    "message_404": "undefined address", 
- }
+# MAPBOX_KEY = 'pk.eyJ1IjoiZnJhbWVmMzE4IiwiYSI6ImNsNXh4NmExczAyODUzZG55anp1eHl3azQifQ.dUtvypHWk8UfMNgJe-aP8A'
+# default_map_attrs = {  
+#     "style": "mapbox://styles/mapbox/outdoors-v11",
+#     "zoom": 13,
+#     "center": [103.64099592061046, 16.04194018075107],
+#     "cursor_style": 'pointer',
+#     "marker_color": "red",
+#     "rotate": False,
+#     "geocoder": True,
+#     "fullscreen_button": True,
+#     "navigation_buttons": True,
+#     "track_location_button": True, 
+#     "readonly": True,
+#     "placeholder": "Pick a location on map below", 
+#     "language": "auto",
+#     "message_404": "undefined address", 
+#  }
