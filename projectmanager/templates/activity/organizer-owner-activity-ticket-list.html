@@ -12,9 +12,9 @@
               <tr>
                 <th scope="col">#</th>
                 <th scope="col">ชือ-สกุล</th>
-                <th scope="col">สถานะ</th>
+                <th scope="col">ห้อง</th>
+                <th scope="col">แผนก</th>
                 <th scope="col">การเช็คอิน</th>
-                <!-- <th scope="col">รายละเอียด</th> -->
               </tr>
             </thead>
             <tbody>
@@ -22,17 +22,8 @@
                     <tr>
                         <th scope="row">{{forloop.counter}}</th>
                         <td>{{ticket.first_name}} {{ticket.last_name}}</td>
-                        <td>
-                            {% if ticket.status == 'รอตรวจสอบ' %}
-                                <span class="text-warning">รอตรวจสอบ</span>
-                                {% elif ticket.status == 'ยืนยันแล้ว' %}
-                                <span class="text-success">ยืนยันแล้ว</span>
-                                {% elif ticket.status == 'ยกเลิก' %}
-                                <span class="text-danger">ยกเลิก</span>
-                                {% elif ticket.status == 'ยังไม่ชำระเงิน' %}
-                                <span class="text-danger">ยังไม่ชำระเงิน</span>
-                            {% endif %}
-                        </td>
+                        <td>{{ticket.room}}</td>
+                        <td>{{ticket.department}}</td>
                         <td>
                             {% if ticket.checkin %}
                                 <span class="text-success">เช็คอินเรียบร้อยแล้ว</span>
@@ -40,9 +31,6 @@
                                  <span class="text-danger">ยังไม่เช็คอิน</span>
                             {% endif %}
                         </td>
-                        <!-- <td>
-                            <a href="" class="btn btn-success">รายละเอียด</a>
-                        </td> -->
                     </tr>
                 {% endfor %}
             </tbody>

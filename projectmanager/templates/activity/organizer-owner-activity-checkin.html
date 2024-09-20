@@ -1,25 +1,28 @@
 {% extends 'base.html' %}
 
-
-{% block title %}<title>Check in | {{activity}} </title>{% endblock %}
-
+{% block title %}
+<title>Check in | {{ activity.title }} </title>
+{% endblock %}
 
 {% block content %}
 <div class="card mb-2">
     <div class="card-body">
-        <h5 class="card-title">{{activity.title}}</h5>
+        <h5 class="card-title">{{ activity.title }}</h5>
         <div class="d-grid gap-2">
-            <a href="{{activity.get_absolute_organizer_owner_activity_ticket_list_url}}" class="btn btn-success"><i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม</a>
+            <a href="{{ activity.get_absolute_organizer_owner_activity_ticket_list_url }}" class="btn btn-success">
+                <i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม</a>
         </div>
     </div>
 </div>
 
 <div class="card">
     <div class="card-body">
-        <h5 class="card-title">{{activity.title}}</h5>
+        <h5 class="card-title">{{ activity.title }}</h5>
         <p class="card-text">Check in QR Code สำหรับผู้เข้าร่วมกิจกรรม</p>
         <div class="d-grid gap-2">
-            <button type="button" class="btn btn-warning" onclick="scanCode()"><i class="fa-solid fa-qrcode"></i> Scan QR Code</button>
+            <button type="button" class="btn btn-warning" onclick="scanQRCode()">
+                <i class="fa-solid fa-qrcode"></i> Scan QR Code
+            </button>
         </div>
     </div>
 </div>
@@ -27,28 +30,36 @@
 <div id="check-in-partials"></div>
 
 <form id="check-in" hx-post="{% url 'ticket-checkin' %}" hx-target="#check-in-partials">
-    <input type="text" name="activity_uid" value="{{activity.uid}}" style="visibility:hidden">
+    <input type="text" name="activity_uid" value="{{ activity.uid }}" style="visibility:hidden">
     <input type="text" id="scanCode" name="ticket_uid" style="visibility:hidden">
     <button type="submit" id="clickButton" style="visibility:hidden">submit</button>
 </form>
 
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <script>
-    async function scanCode() {
-          if (liff.isInClient()) {
-              const result = await liff.scanCode()
-              document.getElementById("scanCode").value = result.value
-              if (result.value) {
-                document.getElementById('clickButton').click();
-              }
-          } else {
-            Swal.fire({
-              position: 'center',
-              icon: 'error',
-              title: 'กรุณาเปิดในแอพพลิเคชั่น Line',
-              showConfirmButton: false,
-              timer: 1750
-            })
-          }
+liff.init({
+    liffId: "2006304809-k4W7Wdro"
+}).then(() => {
+    console.log("LIFF initialized");
+}).catch(err => {
+    console.error('LIFF initialization failed:', err);
+});
+
+function scanQRCode() {
+    liff.scanCode().then(result => {
+        if (result.value) {
+            document.getElementById('scanCode').value = result.value; // ตั้งค่าฟิลด์ scanCode
+            document.getElementById('clickButton').click(); // ส่งฟอร์ม
+            
+            // แสดงผลลัพธ์ (optional)
+            alert('สแกนสำเร็จ: ' + result.value);
+        } else {
+            alert('ไม่พบข้อมูลใน QR Code');
         }
+    }).catch(err => {
+        console.error('Error scanning QR code:', err);
+        alert('เกิดข้อผิดพลาดในการสแกน QR Code');
+    });
+}
 </script>
 {% endblock %}

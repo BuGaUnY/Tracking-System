@@ -36,7 +36,7 @@ class Profile(models.Model):
     ('การจัดการ', 'การจัดการ'),
     )
 
-    # PREFIX_CHOICES = (
+    # GENDER_CHOICES = (
     #     ('นาย', 'นาย'),
     #     ('นางสาว', 'นางสาว'),
     #     ('นาง', 'นาง'), 
@@ -45,7 +45,6 @@ class Profile(models.Model):
     uid = models.UUIDField(default = uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     image = models.ImageField(upload_to='profile-image', null=True, blank=True, default='profile-image/default.png')
-    # prefix = models.CharField(max_length=200, null=True, blank=True, choices=PREFIX_CHOICES)
     first_name = models.CharField(max_length=200, null=True, blank=True)
     last_name = models.CharField(max_length=200, null=True, blank=True)
     birthday = models.DateField(null=True, blank=True)
@@ -57,9 +56,13 @@ class Profile(models.Model):
     phone = models.CharField(max_length=20, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     status = models.BooleanField(default=False)
+    pdpa = models.BooleanField(default=False)
+    date_create = models.DateTimeField(auto_now_add=True, blank=False)
+    date_updated = models.DateTimeField(auto_now=True, blank=False)
     
     def __str__(self):
-        return self.first_name
+        # ตรวจสอบให้แน่ใจว่าคืนค่าเป็นสตริง
+        return f"{self.first_name} {self.last_name}" if self.first_name and self.last_name else "Profile"
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -214,8 +217,4 @@ class Profile(models.Model):
     #         line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
     #     super().save(*args, **kwargs)
 
-class Attendance(models.Model):
-    student = models.ForeignKey(Profile, on_delete=models.CASCADE)
-    date = models.DateTimeField(auto_now_add=True)
-    status = models.BooleanField(default=False)
 

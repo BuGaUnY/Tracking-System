@@ -1,11 +1,11 @@
 {% load static %}
-<header class="p-2 mb-3 fixed-top" style="background-color: #3498db;">
+<header class="p-2 mb-3 fixed-top" style="background-color: #3498db; width: 100%; box-sizing: border-box;">
     <div class="container-fluid d-grid gap-3 align-items-center" style="grid-template-columns: 1fr 2fr;">
         <a href="{% url 'index' %}" class="d-flex align-items-center mb-lg-0 text-dark text-decoration-none">
           <img class="img-fluid" src="{% static 'img/logo_en.png' %}" alt="" style="height: 50px; width: 50px;">
-          <h3 class="container-fluid fw-bold" style="white-space: nowrap; margin-top: 0.2em;">
-            ระบบติดตามสถานะกิจกรรม วิทยาลัยเทคนิคชัยภูมิ
-          </h3>
+          <h5 class="container-fluid fw-bold" style="white-space: nowrap; margin-top: 0.2em;">
+            ระบบติดตามสถานะกิจกรรม
+          </h5>
         </a>  
       <div class="d-flex align-items-center">
         <form class="w-100 me-3" role="search"></form>

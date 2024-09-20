@@ -17,11 +17,11 @@ urlpatterns = [
     path('ticket/<int:pk>/', views.TicketDetail.as_view(), name='ticket-detail'),
     path('ticket/<int:pk>/update/', views.TicketUpdate.as_view(), name='ticket-update'),
     path('ticket/checkin/', views.TicketCheckin.as_view(), name='ticket-checkin'),
-    path('ticket/checkin/success', views.TicketCheckinSuccess.as_view(), name='ticket-checkin-success'),
-    path('attendance/checkin/', views.attendance_checkin, name='attendance_checkin'),
-    path('attendance/checkin/save/', views.save_attendance_checkin, name='save_attendance_checkin'),
-    path('attendance/report/', views.attendance_report, name='attendance_report'),
-    path('attendance/checkin/success/', views.attendance_checkin_success, name='attendance_checkin_success'),
+    path('attendance/', views.AttendanceList.as_view(), name='attendance_list'),
+    path('report/', views.ReportList.as_view(), name='report_list'),
+    path('attendance/checkin/', views.attendance_checkin, name='attendance'),
+    path('attendance/bulk_checkin/<int:pk>/', views.bulk_checkin, name='bulk_checkin'),
+    path('report/<int:pk>/', views.attendance_report, name='attendance_report'),
     path('attendance/search/', views.attendancesearch, name='attendance_search'),
 ]
 

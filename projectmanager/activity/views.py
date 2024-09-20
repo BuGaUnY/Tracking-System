@@ -7,16 +7,18 @@ from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from .forms import TicketForm, AttendanceCheckinForm
+from .forms import TicketForm, AttendanceCheckinForm, AttendanceCheckinFormSet, CheckinForm
 from django.urls import reverse
 from django_filters.views import FilterView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
 import django_filters
 from django import forms
 from datetime import datetime
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseBadRequest, Http404
 from django.utils import timezone
 import csv
+from django.forms.models import modelformset_factory
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 
 org_pk = 123
 ev_pk = 456
@@ -199,6 +201,15 @@ class TicketUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
     def get_success_url(self):
         return reverse('ticket-detail', kwargs={'pk': self.kwargs['pk']})
 
+def post(self, request, *args, **kwargs):
+    if request.htmx:
+        activity = Activity.objects.get(uid=request.POST['activity_uid'])
+        try:
+            ticket = Ticket.objects.get(uid=request.POST['ticket_uid'], activity=activity)
+        except Ticket.DoesNotExist:
+            ticket = None
+        return render(request, 'activity/partials/ticket-checkin.html', {'ticket': ticket})
+
 class TicketCheckin(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         if request.htmx:
@@ -207,7 +218,7 @@ class TicketCheckin(LoginRequiredMixin, View):
                 ticket = Ticket.objects.get(uid=request.POST['ticket_uid'] , activity = activity)
             except Ticket.DoesNotExist:
                 ticket = None
-            return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
+            return render(request, 'activity/partials/ticket-checkin.html', {'ticket': ticket})
 
 class TicketCheckinSuccess(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
@@ -217,94 +228,156 @@ class TicketCheckinSuccess(LoginRequiredMixin, View):
             ticket.checkin = True
             ticket.save()
             return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
- 
-def attendance_checkin(request):
-    rooms = Profile.objects.values_list('room', flat=True).distinct()
-    departments = Profile.objects.values_list('department', flat=True).distinct()
 
-    room = request.GET.get('room')
-    department = request.GET.get('department')
+class AttendanceList(ListView):
+    model = Attendance
+    template_name = 'attendance/attendance_list.html'
+    context_object_name = 'attendances'
 
+def bulk_checkin(request, pk):
+    attendance = Attendance.objects.get(pk=pk)
+    room_filter = request.GET.get('room', None)
+    department_filter = request.GET.get('department', None)
     profiles = Profile.objects.all()
-    if room:
-        profiles = profiles.filter(room=room)
-    if department:
-        profiles = profiles.filter(department=department)
 
-    selected_room = room
-    selected_department = department
+    if room_filter:
+        profiles = profiles.filter(room=room_filter)
 
-    context = {
-        'profiles': profiles,
-        'rooms': rooms,
-        'departments': departments,
-        'selected_room': selected_room,
-        'selected_department': selected_department,
-    }
-    return render(request, 'attendance/attendance_checkin.html', context)
+    if department_filter:
+        profiles = profiles.filter(department=department_filter)
 
-def save_attendance_checkin(request):
+    AttendanceCheckinFormSet = modelformset_factory(
+        AttendanceCheckin,
+        form=AttendanceCheckinForm,
+        extra=len(profiles)
+    )
+
+    date_checkin = timezone.now().date()  # วันที่ปัจจุบัน
+
     if request.method == 'POST':
-        att_name = request.POST.get('att_name')
-        date_checkin = request.POST.get('date_checkin')
-        student_numbers = request.POST.getlist('student_numbers')
+        formset = AttendanceCheckinFormSet(request.POST)
 
-        # Validate input
-        if not att_name or not date_checkin or not student_numbers:
-            return render(request, 'attendance/attendance_checkin.html', {'error': 'Please fill in all fields'})
+        if formset.is_valid():
+            instances = formset.save(commit=False)
 
-        # Fetch the Attendance instance by att_name
-        try:
-            attendance = Attendance.objects.get(att_name=att_name)
-        except Attendance.DoesNotExist:
-            return render(request, 'attendance/attendance_checkin.html', {'error': 'Attendance not found'})
+            for instance in instances:
+                instance.att_name = attendance
+                instance.date_checkin = date_checkin
 
-        # Save attendance check-ins for selected students
-        for student_number in student_numbers:
-            try:
-                profile = Profile.objects.get(student_number=student_number)
-                attendance_checkin = AttendanceCheckin.objects.create(
-                    student_number=profile.student_number,
-                    first_name=profile.first_name,
-                    last_name=profile.last_name,
-                    room=profile.room,
-                    degree=profile.degree,
-                    department=profile.department,
+                # ตรวจสอบข้อมูลซ้ำในวันนี้โดยใช้ student_number
+                exists_by_student = AttendanceCheckin.objects.filter(
+                    student_number=instance.student_number,
                     att_name=attendance,
-                    date_checkin=date_checkin,
-                    presence=True  # Assuming it's checked by default
-                )
-            except Profile.DoesNotExist:
-                return render(request, 'attendance/attendance_checkin.html', {'error': f'Profile not found for student number: {student_number}'})
+                    date_checkin=date_checkin
+                ).exists()
 
-        return redirect('attendance_checkin_success')
+                # ตรวจสอบข้อมูลซ้ำโดยใช้ first_name และ last_name
+                exists_by_name = AttendanceCheckin.objects.filter(
+                    first_name=instance.first_name,
+                    last_name=instance.last_name,
+                    att_name=attendance,
+                    date_checkin=date_checkin
+                ).exists()
 
-    return render(request, 'attendance/attendance_checkin.html')
+                if exists_by_student or exists_by_name:
+                    print(f"ข้ามการบันทึกข้อมูลซ้ำสำหรับหมายเลขนักเรียน: {instance.student_number} ในวันที่ {date_checkin}")
+                    continue  # ข้ามการบันทึกอินสแตนซ์นี้
 
-def attendance_checkin_success(request):
-    return render(request, 'attendance/attendance_checkin_success.html')
+                # บันทึกเฉพาะเมื่อไม่มีข้อมูลซ้ำ
+                instance.save()
 
-def attendance_report(request):
-    attendances = Attendance.objects.all()  # Fetch all attendances for reference (optional)
-    attendance_data = None  # Initialize as None
+            return redirect('attendance_report')
+
+    else:
+        initial_data = [
+            {
+                'student_number': profile.student_number,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'room': profile.room,
+                'degree': profile.degree,
+                'department': profile.department,
+                'presence': True,
+            }
+            for profile in profiles
+        ]
+
+        formset = AttendanceCheckinFormSet(initial=initial_data, queryset=AttendanceCheckin.objects.none())
+        grouped_profiles = profiles.values('room', 'department').distinct()
+
+    return render(request, 'attendance/bulk_checkin.html', {
+        'formset': formset,
+        'attendance': attendance,
+        'grouped_profiles': grouped_profiles,
+        'room_filter': room_filter,
+        'department_filter': department_filter
+    })
+
+class ReportList(ListView):
+    model = Attendance
+    template_name = 'attendance/report_list.html'
+    context_object_name = 'reports'
+
+def attendance_report(request, pk):
+    # Fetch attendance record using the pk
+    attendance = get_object_or_404(Attendance, pk=pk)
+
+    attendances = Attendance.objects.all()
+    progress_reports = {}
 
     if request.method == 'GET':
-        att_name = request.GET.get('att_name', '')  # Get selected course
-        date_checkin = request.GET.get('date_checkin', '')  # Get selected date
+        date_checkin = request.GET.get('date_checkin', '').strip()  # Trim whitespace
 
-        if att_name:
-            attendance_data = AttendanceCheckin.objects.filter(
-                att_name__pk=att_name,
-                date_checkin=date_checkin
-            ).select_related('att_name')
-        else:
-            attendance_data = AttendanceCheckin.objects.filter(date_checkin=date_checkin).select_related('att_name') if date_checkin else AttendanceCheckin.objects.all().select_related('att_name')
+        # Check date format
+        if date_checkin and not parse_date(date_checkin):
+            raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
 
-        # Update presence status based on the condition
-        for attendance in attendance_data:
-            attendance.presence = "Present" if attendance.presence == 1 else "Absent"
+        # Filter attendance data for the selected activity
+        attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
 
-    context = {'attendances': attendances, 'attendance_data': attendance_data}
+        if date_checkin:
+            attendance_data = attendance_data.filter(date_checkin=date_checkin)
+
+        # Update presence status and calculate attendance count and percentage
+        attendance_count = {}
+        for record in attendance_data:
+            presence_status = "Present" if record.presence else "Absent"
+
+            # Count attendance for each student
+            student_number = record.student_number
+            if student_number not in attendance_count:
+                attendance_count[student_number] = {
+                    'present': 0,
+                    'absent': 0,
+                    'name': f"{record.first_name} {record.last_name}",
+                    'att_name': attendance.att_name
+                }
+
+            # Increment count
+            if presence_status == "Present":
+                attendance_count[student_number]['present'] += 1
+            else:
+                attendance_count[student_number]['absent'] += 1
+
+        # Create progress report with percentages
+        for student_number, data in attendance_count.items():
+            total_attendance = data['present'] + data['absent']
+            attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
+            status = "ผ่าน" if attendance_percentage >= 80 else "ไม่ผ่าน"
+
+            if data['att_name'] not in progress_reports:
+                progress_reports[data['att_name']] = []
+
+            progress_reports[data['att_name']].append({
+                'student_number': student_number,
+                'name': data['name'],
+                'present': data['present'],
+                'absent': data['absent'],
+                'percentage': round(attendance_percentage, 2),
+                'status': status,
+            })
+
+    context = {'attendances': attendances, 'progress_reports': progress_reports}
     return render(request, 'attendance/attendance_report.html', context)
 class AttendanceFilter(FilterSet):
     class Meta:
@@ -322,6 +395,27 @@ def attendancesearch(request):
     context = {'filter': filter}
     return render(request, 'attendance/attendance_search.html', context)
 
+def attendance_checkin(request):
+    if request.method == 'POST':
+        form = CheckinForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('attendance/attendance_report')  # Redirect to a success page or another view
+    else:
+        form = CheckinForm()
+
+    def get_initial(self):
+        initial = super().get_initial()
+        profile = self.request.user.profile
+        initial['student_number'] = profile.student_number
+        initial['first_name'] = profile.first_name
+        initial['last_name'] = profile.last_name
+        initial['room'] = profile.room
+        initial['degree'] = profile.degree
+        initial['department'] = profile.department
+        return initial
+    
+    return render(request, 'attendance/attendance.html', {'form': form})
 
 
 

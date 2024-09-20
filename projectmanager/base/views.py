@@ -4,9 +4,9 @@ from django_filters.views import FilterView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.urls import reverse
-from .forms import ProfileForm, AttendanceForm
+from .forms import ProfileForm
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Profile, Attendance
+from .models import Profile
 import django_filters
 import qrcode
 from django.http import HttpResponse
@@ -44,12 +44,6 @@ def get(self, request):
     students = Profile.objects.all()
     return render(request, 'your_template.html', {'object_list': students})
 
-def post(self, request):
-    student_id = request.POST.get('student_id')
-    student = get_object_or_404(Profile, id=student_id)
-    attendance = Attendance(student=student, status=True)
-    attendance.save()
-    return redirect('student-list')
     
 def generate_qr_code(request):
     data = "Profile"
@@ -91,46 +85,4 @@ class StudentSearch(FilterView):
     template_name = 'base/student-search.html'
     filterset_class = StudentFilter
 
-def checkin_users(request):
-    if request.method == 'POST':
-        room = request.POST.get('room')
-        degree = request.POST.get('degree')
-        department = request.POST.get('department')
-        presence = int(request.POST.get('presence'))  # 0 for Absent, 1 for Present
-
-        # ตรวจสอบว่ามีข้อมูลที่ถูกส่งมาหรือไม่
-        if room and degree and department:
-            # สร้างเงื่อนไขการกรองผู้ใช้
-            user_filter = {
-                'room': room,
-                'degree': degree,
-                'department': department
-            }
-
-            # กรองผู้ใช้ตามเงื่อนไข
-            filtered_users = Profile.objects.filter(**user_filter)
-
-            # ตรวจสอบว่ามีผู้ใช้ที่ตรงกับเงื่อนไขหรือไม่
-            if filtered_users.exists():
-                # สร้างการเช็คชื่อสำหรับผู้ใช้ที่ผ่านการกรองแล้ว
-                checkins_to_create = []
-                for user in filtered_users:
-                    checkins_to_create.append(AttendanceCheckin(
-                        user=user,
-                        room=room,
-                        degree=degree,
-                        department=department,
-                        presence=presence
-                    ))
-
-                # บันทึกการเช็คชื่อลงในฐานข้อมูล
-                AttendanceCheckin.objects.bulk_create(checkins_to_create)
-
-                return JsonResponse({'message': 'Checkin successful!'})
-            else:
-                return JsonResponse({'message': 'No users found matching the criteria'}, status=400)
-        else:
-            return JsonResponse({'message': 'Missing room, degree, or department'}, status=400)
-    else:
-        return JsonResponse({'message': 'Invalid request method!'}, status=400)
 

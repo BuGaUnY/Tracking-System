@@ -14,19 +14,14 @@
       <th>ห้อง</th>
       <th>ชั้นปี</th>
       <th>แผนก</th>
-      <th>เช็คชื่อ</th>
     </tr>
     {% for student in object_list %}
     <tr>
       <td>{{ student.student_number }}</td>
       <td>{{ student.first_name }} {{ student.last_name }}</td>
-      <td>{{ student.room }}</td>
-      <td>{{ student.degree }}</td>
+      <td class="text-center">{{ student.room }}</td>
+      <td class="text-center">{{ student.degree }}</td>
       <td>{{ student.department }}</td>
-      <td>
-        <input class="center" type="checkbox" id="item1" name="item1" value="item1"></label>
-      </td>
-      <!-- <td>{{ student.attendance_status }}</td> -->
     </tr>
     {% endfor %}
   </table>

@@ -1,38 +1,75 @@
-<ul class="shadow-sm bg-body-tertiary rounded nav col-12 col-lg-auto justify-content-center my-md-0 fixed-bottom">
-    <li>
-        <a href="{% url 'activity-list' %}" class="nav-link text-dark text-center">
-          <i class="fa-regular fa-solid fa-bullhorn bi d-block mx-auto mb-1"></i>
-          ประชาสัมพันธ์กิจกรรมพิเศษ
-        </a>
-    </li>
-    <li>
-      <a href="{% url 'attendance_checkin' %}" class="nav-link text-dark text-center">
-        <i class="fa-regular fa-solid fa-calendar-check bi d-block mx-auto mb-1"></i>
-        Attendance
+<ul class="shadow-sm bg-body-tertiary rounded nav col-12 col-lg-auto justify-content-center my-md-0 fixed-bottom d-flex">
+  <li>
+      <a href="{% url 'activity-list' %}" class="nav-link text-dark text-center">
+        <i class="fa-solid fa-bullhorn bi d-block mx-auto mb-1 icon-responsive"></i>
+        <span class="text-responsive">กิจกรรมพิเศษ</span>
       </a>
-    </li>
-    <li>
-      <a href="{% url 'attendance_report' %}" class="nav-link text-dark text-center">
-        <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1"></i>
-        Report
-      </a>
-    </li>
-    <li>
-      <a href="{% url 'attendance_search' %}" class="nav-link text-dark text-center">
-        <i class="fa-regular fa-solid fa-magnifying-glass bi d-block mx-auto mb-1"></i>
-        ค้นหา
-      </a>
-    </li>
-    <li>
-      <a href="{% url 'students' %}" class="nav-link text-dark text-center">
-        <i class="fa-regular fa-solid  fa-calendar-check bi d-block mx-auto mb-1"></i>
-        รายชื่อ
-      </a>
-    </li>
-    <li>
-      <a href="#" class="nav-link text-dark text-center">
-        <i class="fa-regular fa-solid  fa-calendar-check bi d-block mx-auto mb-1"></i>
-        ตรวจสอบผลกิจกรรม
-      </a>
-    </li>
-  </ul>
+  </li>
+  <li>
+    <a href="#" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">รายงาน</span>
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'attendance_list' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-magnifying-glass bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">เช็คชื่อ</span>
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'students' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">นักเรียน</span>
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'report_list' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">รายงาน</span>
+    </a>
+  </li>
+</ul>
+
+<style>
+.icon-responsive {
+  font-size: 2rem; /* Default size for large screens */
+}
+
+.text-responsive {
+  font-size: 1rem; /* Default size for large screens */
+}
+
+/* Media queries for tablet screens */
+@media (max-width: 768px) {
+  .icon-responsive {
+    font-size: 1.5rem; /* Smaller icon for tablet */
+  }
+
+  .text-responsive {
+    font-size: 0.875rem; /* Smaller text for tablet */
+  }
+}
+
+/* Media queries for mobile screens */
+@media (max-width: 576px) {
+  .icon-responsive {
+    font-size: 1.5rem; /* Smaller icon for mobile */
+  }
+
+  .text-responsive {
+    font-size: 0.7rem; /* Smaller text for mobile */
+  }
+}
+
+/* Optional: Add horizontal scrolling for very small screens */
+@media (max-width: 400px) {
+  .icon-responsive {
+    font-size: 1rem; /* Smaller icon for mobile */
+  }
+
+  .text-responsive {
+    font-size: 0.6rem; /* Smaller text for mobile */
+  }
+}
+</style>

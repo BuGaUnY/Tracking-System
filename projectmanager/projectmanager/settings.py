@@ -26,17 +26,15 @@ SECRET_KEY = 'django-insecure-+49#s-ax0#@7y8!xh&nc*g5=9+r7&&ks-9c0wwadb=bp!j-1y$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
-
 CSRF_TRUSTED_ORIGINS = [
-    # 'https://dev.entv.events/',
-    # 'https://frame-dev-test.frame-dev.com',
-    # 'https://api-dev.unicon.site',
-    # 'https://dev.unicon.site',
-    'https://bugauny.pythonanywhere.com',
-    'https://liff.line.me',
+    'https://dev.entv.events/',
+    'https://frame-dev-test.frame-dev.com',
+    'https://8407-2403-6200-8830-9b6c-b130-2ee3-98d7-c5a1.ngrok-free.app',
+    'https://liff.line.me/',
 ]
 # Application definition
+
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -147,7 +145,7 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Bangkok'
 
-USE_I18N = True
+# USE_I18N = True
 
 USE_TZ = True
 
@@ -194,7 +192,7 @@ SOCIALACCOUNT_PROVIDERS = {
     'line': {
             'APP': {
                   'client_id': '2006304809',
-                  'secret': '2ad755bcdce337aa003e625ea886159e',
+                  'secret': '2ad755bcdce337aa003e625ea886159e'
             },
             "SCOPE": ['profile', 'openid', 'email']
     },
@@ -221,8 +219,8 @@ CKEDITOR_CONFIGS = {
 }
 
 # LINE Messaging API
-# channel_access_token = 'f45bC3kWUn7IkGi6HKTqQ+5estYC0uhyz4t+YBSQ3ABJRzoQg9V2FUkQkgFWLzdXld4SK1DQExeC78nf+vzQTal4xSSAORFAk0/64i600YaN1iPTqNTNUrWyTWuOzxFuOt96tAi3Q3CmUZ0WxHm4kwdB04t89/1O/w1cDnyilFU='
-# channel_secret = 'deaddb80853cf5a78fb2ae159fddba5b'
+channel_access_token = 'f45bC3kWUn7IkGi6HKTqQ+5estYC0uhyz4t+YBSQ3ABJRzoQg9V2FUkQkgFWLzdXld4SK1DQExeC78nf+vzQTal4xSSAORFAk0/64i600YaN1iPTqNTNUrWyTWuOzxFuOt96tAi3Q3CmUZ0WxHm4kwdB04t89/1O/w1cDnyilFU='
+channel_secret = 'deaddb80853cf5a78fb2ae159fddba5b'
 
 domain_media = 'https://frame-dev-test.frame-dev.com/media'
 # domain_media = 'https://dev.entv.events/media'

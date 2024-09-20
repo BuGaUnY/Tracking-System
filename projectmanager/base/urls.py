@@ -8,5 +8,4 @@ urlpatterns = [
     path('generate_qr_code/', generate_qr_code, name='generate_qr_code'),
     path('students/', StudentListView.as_view(), name='students'),
     path('students/search/', views.StudentSearch.as_view(), name='student-search'),
-    path('students/attendance/', views.checkin_users, name='attendance'),
 ]

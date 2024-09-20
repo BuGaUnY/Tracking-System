@@ -2,64 +2,52 @@
 {% load static %}
 {% load date_th %}
 {% block content %}
-<title>Attendance Report</title>
+{% if progress_reports %}
+    {% for att_name, report in progress_reports.items %}
+        <h2>รายงานความก้าวหน้า{{ att_name }}</h2>
+        <table>
+            <tr>
+                <th>รหัสประจำตัว</th>
+                <th>ชื่อ</th>
+                <th>เข้า</th>
+                <th>ขาด</th>
+                <th>เปอร์เซ็นต์</th>
+                <th>สถานะ</th>
+            </tr>
+            {% for item in report %}
+            <tr>
+                <td>{{ item.student_number }}</td>
+                <td>{{ item.name }}</td>
+                <td class="text-center">{{ item.present }}</td>
+                <td class="text-center">{{ item.absent }}</td>
+                <td class="text-center">{{ item.percentage }}</td>
+                <td class="text-center">{{ item.status }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+{% else %}
+    <p>ไม่มีข้อมูลที่แสดงในรายงาน</p>
+{% endif %}
 <style>
     table {
         border-collapse: collapse;
-        /* Combine cell borders */
         width: 100%;
-        /* Make table fit the container */
     }
 
     th,
     td {
         padding: 5px;
-        /* Add padding around cell content */
         border: 1px solid #ddd;
-        /* Add thin border */
     }
 
     th {
         text-align: center;
         background-color: #f0f0f0;
-        /* Highlight table headers */
     }
 
     h1 {
         text-align: center;
     }
 </style>
-<div class="card-body bg-body-tertiary p-2 rounded">
-    <h1>Attendance Report</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>รหัสประจำตัว</th>
-                <th>ชื่อ-สกุล</th>
-                <th>ห้อง</th>
-                <th>ชั้นปี</th>
-                <th>แผนก</th>
-                <th>กิจกรรม</th>
-                <th>เวลา</th>
-                <th>สถานะ</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for attendance in attendance_data %}
-            <tr>
-                <td>{{ attendance.student_number}}</td>
-                <td>{{ attendance.first_name }} {{ attendance.last_name }} </td>
-                <td>{{ attendance.room }}</td>
-                <td>{{ attendance.degree }}</td>
-                <td>{{ attendance.department }}</td>
-                <td>{{ attendance.att_name }}</td>
-                <td>{{ attendance.date_checkin|date_th}}</td>
-                <td>{{ attendance.presence}}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    </body>
-</div>
 {% endblock %}
