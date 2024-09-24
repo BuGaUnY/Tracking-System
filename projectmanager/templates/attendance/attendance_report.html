@@ -8,7 +8,9 @@
         <table>
             <tr>
                 <th>รหัสประจำตัว</th>
-                <th>ชื่อ</th>
+                <th>ชื่อ-สกุล</th>
+                <th>ห้อง</th>
+                <th>แผนก</th>
                 <th>เข้า</th>
                 <th>ขาด</th>
                 <th>เปอร์เซ็นต์</th>
@@ -18,6 +20,8 @@
             <tr>
                 <td>{{ item.student_number }}</td>
                 <td>{{ item.name }}</td>
+                <td class="text-center">{{ item.room }}</td>
+                <td>{{ item.department }}</td>
                 <td class="text-center">{{ item.present }}</td>
                 <td class="text-center">{{ item.absent }}</td>
                 <td class="text-center">{{ item.percentage }}</td>

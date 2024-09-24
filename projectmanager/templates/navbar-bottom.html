@@ -5,27 +5,27 @@
         <span class="text-responsive">กิจกรรมพิเศษ</span>
       </a>
   </li>
-  <li>
+  <!-- <li>
     <a href="#" class="nav-link text-dark text-center">
       <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
       <span class="text-responsive">รายงาน</span>
     </a>
-  </li>
+  </li> -->
+  <li>
+    <a href="{% url 'students' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-users bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">นักเรียน</span>
+    </a>
   <li>
     <a href="{% url 'attendance_list' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-magnifying-glass bi d-block mx-auto mb-1 icon-responsive"></i>
+      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
       <span class="text-responsive">เช็คชื่อ</span>
     </a>
   </li>
-  <li>
-    <a href="{% url 'students' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">นักเรียน</span>
-    </a>
   </li>
   <li>
     <a href="{% url 'report_list' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
+      <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
       <span class="text-responsive">รายงาน</span>
     </a>
   </li>

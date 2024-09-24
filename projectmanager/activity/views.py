@@ -286,7 +286,7 @@ def bulk_checkin(request, pk):
                 # บันทึกเฉพาะเมื่อไม่มีข้อมูลซ้ำ
                 instance.save()
 
-            return redirect('attendance_report')
+            return redirect('report_list')
 
     else:
         initial_data = [
@@ -345,12 +345,15 @@ def attendance_report(request, pk):
 
             # Count attendance for each student
             student_number = record.student_number
+
             if student_number not in attendance_count:
                 attendance_count[student_number] = {
                     'present': 0,
                     'absent': 0,
                     'name': f"{record.first_name} {record.last_name}",
-                    'att_name': attendance.att_name
+                    'att_name': attendance.att_name,
+                    'room': record.room,
+                    'department': record.department,
                 }
 
             # Increment count
@@ -371,6 +374,8 @@ def attendance_report(request, pk):
             progress_reports[data['att_name']].append({
                 'student_number': student_number,
                 'name': data['name'],
+                'room': data['room'],
+                'department': data['department'],
                 'present': data['present'],
                 'absent': data['absent'],
                 'percentage': round(attendance_percentage, 2),
@@ -379,6 +384,8 @@ def attendance_report(request, pk):
 
     context = {'attendances': attendances, 'progress_reports': progress_reports}
     return render(request, 'attendance/attendance_report.html', context)
+
+
 class AttendanceFilter(FilterSet):
     class Meta:
         model = Profile
