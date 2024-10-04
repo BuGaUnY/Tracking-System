@@ -29,7 +29,7 @@ DEBUG = True
 CSRF_TRUSTED_ORIGINS = [
     'https://dev.entv.events/',
     'https://frame-dev-test.frame-dev.com',
-    'https://faf5-2403-6200-8821-d90c-8d00-4ac6-5ab3-2dcb.ngrok-free.app',
+    'https://652f-2403-6200-8831-1d34-51f8-29ed-3d47-4184.ngrok-free.app',
     'https://liff.line.me/',
 ]
 # Application definition

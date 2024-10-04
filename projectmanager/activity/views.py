@@ -385,6 +385,72 @@ def attendance_report(request, pk):
     context = {'attendances': attendances, 'progress_reports': progress_reports}
     return render(request, 'attendance/attendance_report.html', context)
 
+def self_report(request, pk):
+    # Fetch attendance record using the pk
+    attendance = get_object_or_404(Attendance, pk=pk)
+
+    attendances = Attendance.objects.all()
+    progress_reports = {}
+
+    if request.method == 'GET':
+        date_checkin = request.GET.get('date_checkin', '').strip()  # Trim whitespace
+
+        # Check date format
+        if date_checkin and not parse_date(date_checkin):
+            raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
+
+        # Filter attendance data for the selected activity
+        attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
+
+        if date_checkin:
+            attendance_data = attendance_data.filter(date_checkin=date_checkin)
+
+        # Update presence status and calculate attendance count and percentage
+        attendance_count = {}
+        for record in attendance_data:
+            presence_status = "Present" if record.presence else "Absent"
+
+            # Count attendance for each student
+            student_number = record.student_number
+
+            if student_number not in attendance_count:
+                attendance_count[student_number] = {
+                    'present': 0,
+                    'absent': 0,
+                    'name': f"{record.first_name} {record.last_name}",
+                    'att_name': attendance.att_name,
+                    'room': record.room,
+                    'department': record.department,
+                }
+
+            # Increment count
+            if presence_status == "Present":
+                attendance_count[student_number]['present'] += 1
+            else:
+                attendance_count[student_number]['absent'] += 1
+
+        # Create progress report with percentages
+        for student_number, data in attendance_count.items():
+            total_attendance = data['present'] + data['absent']
+            attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
+            status = "ผ่าน" if attendance_percentage >= 80 else "ไม่ผ่าน"
+
+            if data['att_name'] not in progress_reports:
+                progress_reports[data['att_name']] = []
+
+            progress_reports[data['att_name']].append({
+                'student_number': student_number,
+                'name': data['name'],
+                'room': data['room'],
+                'department': data['department'],
+                'present': data['present'],
+                'absent': data['absent'],
+                'percentage': round(attendance_percentage, 2),
+                'status': status,
+            })
+
+    context = {'attendances': attendances, 'progress_reports': progress_reports}
+    return render(request, 'attendance/attendance_report.html', context)
 
 class AttendanceFilter(FilterSet):
     class Meta:

@@ -10,6 +10,17 @@
                 style="width: 135px;height: 135px;object-fit: cover;border-radius: 50%;">
         </div> 
         <h5 class="card-title">{{ticket.activity.title}}</h5>
+        <p class="card-text"> สถานะการลงทะเบียน :
+            {% if ticket.status == 'รอตรวจสอบ' %}
+            <span class="text-warning">รอตรวจสอบ</span>
+            {% elif ticket.status == 'ยืนยันแล้ว' %}
+            <span class="text-success">ยืนยันแล้ว</span>
+            {% elif ticket.status == 'ยกเลิก' %}
+            <span class="text-danger">ยกเลิก</span>
+            {% elif ticket.status == 'ยังไม่ชำระเงิน' %}
+            <span class="text-danger">ยังไม่ชำระเงิน</span>
+            {% endif %}
+        </p>
         <p class="card-text">ชื่อ : {{ticket.first_name}} {{ticket.last_name}}</p>
         <p class="card-text">วันที่ลงทะเบียน : {{ticket.date_create|date_th}}</p>
         <p class="card-text">
