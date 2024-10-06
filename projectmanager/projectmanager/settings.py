@@ -99,6 +99,7 @@ TEMPLATES = [
             ],
         'libraries':{
                 'date_th': 'activity.templatetags.date_th',
+                'attendance_filters': 'activity.templatetags.attendance_filters'
             }
         },
     },

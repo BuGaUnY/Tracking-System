@@ -23,7 +23,7 @@
                 </a>
             </li>
             <li>
-                <a class="dropdown-item" href="#">
+                <a class="dropdown-item" href="{% url 'self_report' %}">
                     <i class="fa-regular fa-chart-column"></i>
                     ความก้าวหน้า
                 </a>
@@ -47,6 +47,12 @@
               </a>
             </li>
 
+            <li>
+              <a class="dropdown-item" href="{% url 'account_logout' %}">
+                <i class="fa-regular fa-id-card"></i>
+                ออกจากระบบ
+              </a>
+            </li>
           </ul>
         </div>
         {% else %}

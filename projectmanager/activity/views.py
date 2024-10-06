@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django.utils.dateparse import parse_date
 from django.db.models import Count, Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
@@ -321,30 +322,35 @@ class ReportList(ListView):
 def attendance_report(request, pk):
     # Fetch attendance record using the pk
     attendance = get_object_or_404(Attendance, pk=pk)
-
     attendances = Attendance.objects.all()
     progress_reports = {}
+    rooms = set()
+    departments = set()
+
+    # Get filters from the request
+    room_filter = request.GET.get('room', '').strip()
+    department_filter = request.GET.get('department', '').strip()
+    date_checkin = request.GET.get('date_checkin', '').strip()
 
     if request.method == 'GET':
-        date_checkin = request.GET.get('date_checkin', '').strip()  # Trim whitespace
-
-        # Check date format
         if date_checkin and not parse_date(date_checkin):
             raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
 
-        # Filter attendance data for the selected activity
+        # Fetch attendance data and apply date filter
         attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
-
         if date_checkin:
             attendance_data = attendance_data.filter(date_checkin=date_checkin)
 
-        # Update presence status and calculate attendance count and percentage
+        # Apply room and department filters if selected
+        if room_filter:
+            attendance_data = attendance_data.filter(room=room_filter)
+        if department_filter:
+            attendance_data = attendance_data.filter(department=department_filter)
+
         attendance_count = {}
         for record in attendance_data:
-            presence_status = "Present" if record.presence else "Absent"
-
-            # Count attendance for each student
             student_number = record.student_number
+            presence_status = "Present" if record.presence else "Absent"
 
             if student_number not in attendance_count:
                 attendance_count[student_number] = {
@@ -356,13 +362,16 @@ def attendance_report(request, pk):
                     'department': record.department,
                 }
 
-            # Increment count
             if presence_status == "Present":
                 attendance_count[student_number]['present'] += 1
             else:
                 attendance_count[student_number]['absent'] += 1
 
-        # Create progress report with percentages
+            # Collect rooms and departments for filtering
+            rooms.add(record.room)
+            departments.add(record.department)
+
+        # Prepare progress report with attendance percentage
         for student_number, data in attendance_count.items():
             total_attendance = data['present'] + data['absent']
             attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
@@ -382,75 +391,185 @@ def attendance_report(request, pk):
                 'status': status,
             })
 
-    context = {'attendances': attendances, 'progress_reports': progress_reports}
+    context = {
+        'attendances': attendances,
+        'progress_reports': progress_reports,
+        'rooms': sorted(rooms),  # sorted to display rooms in order
+        'departments': sorted(departments),  # sorted to display departments in order
+        'room_filter': room_filter,
+        'department_filter': department_filter,
+        'date_checkin': date_checkin,
+    }
     return render(request, 'attendance/attendance_report.html', context)
 
-def self_report(request, pk):
-    # Fetch attendance record using the pk
-    attendance = get_object_or_404(Attendance, pk=pk)
+ACTIVITY_MAP = {
+    'กิจกรรมเข้าแถว': 'line_up',
+    'กิจกรรมชมรม': 'club',
+    'กิจกรรมโฮมรูม': 'homeroom',
+    'กิจกรรมลูกเสือ': 'scout'
+}
 
+def sum_report(request):
+    # ดึงข้อมูลการเข้าร่วมทั้งหมด
     attendances = Attendance.objects.all()
     progress_reports = {}
+    rooms = set()
+    departments = set()
+
+    # รับค่ากรองจาก request
+    room_filter = request.GET.get('room', '').strip()
+    department_filter = request.GET.get('department', '').strip()
+    date_checkin = request.GET.get('date_checkin', '').strip()
 
     if request.method == 'GET':
-        date_checkin = request.GET.get('date_checkin', '').strip()  # Trim whitespace
-
-        # Check date format
         if date_checkin and not parse_date(date_checkin):
             raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
 
-        # Filter attendance data for the selected activity
-        attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
+        # วนลูปเพื่อดึงข้อมูลการเข้าร่วมแต่ละกิจกรรม
+        for attendance in attendances:
+            attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
 
+            # กรองวันที่ถ้ามี
+            if date_checkin:
+                attendance_data = attendance_data.filter(date_checkin=date_checkin)
+
+            # กรองห้องและแผนกถ้ามี
+            if room_filter:
+                attendance_data = attendance_data.filter(room=room_filter)
+            if department_filter:
+                attendance_data = attendance_data.filter(department=department_filter)
+
+            # เก็บข้อมูลนักเรียนแต่ละคนและสถานะกิจกรรม
+            for record in attendance_data:
+                student_number = record.student_number
+
+                # ถ้ายังไม่มีข้อมูลนักเรียนใน progress_reports ให้เพิ่ม
+                if student_number not in progress_reports:
+                    progress_reports[student_number] = {
+                        'name': f"{record.first_name} {record.last_name}",
+                        'room': record.room,
+                        'department': record.department,
+                        'activities': {
+                            'line_up': '-',
+                            'club': '-',
+                            'homeroom': '-',
+                            'scout': '-',
+                        }
+                    }
+
+                # อัปเดตสถานะกิจกรรมใน activities ของนักเรียน
+                presence_status = "ผ่าน" if record.presence else "ไม่ผ่าน"
+                progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
+
+                # รวบรวมห้องและแผนกสำหรับการกรอง
+                rooms.add(record.room)
+                departments.add(record.department)
+
+    context = {
+        'progress_reports': progress_reports,
+        'rooms': sorted(rooms),
+        'departments': sorted(departments),
+        'room_filter': room_filter,
+        'department_filter': department_filter,
+        'date_checkin': date_checkin,
+    }
+    return render(request, 'attendance/sum_report.html', context)
+
+@login_required
+def self_report(request):
+    # Fetch the current user's profile
+    user_profile = get_object_or_404(Profile, user=request.user)
+
+    # Fetch all attendance records for this user
+    attendances = Attendance.objects.all()
+    progress_reports = {}
+    rooms = set()
+    departments = set()
+
+    # Prepare user details to pass to the template
+    user_info = {
+        'name': f"{user_profile.first_name} {user_profile.last_name}",
+        'student_number': user_profile.student_number,
+        'degree': user_profile.degree,
+        'room': user_profile.room,
+        'department': user_profile.department,
+    }
+
+    # Get filters from the request
+    room_filter = request.GET.get('room', '').strip()
+    department_filter = request.GET.get('department', '').strip()
+    date_checkin = request.GET.get('date_checkin', '').strip()
+
+    if request.method == 'GET':
+        if date_checkin and not parse_date(date_checkin):
+            raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
+
+        # Fetch attendance data for the current user and apply date filter
+        attendance_data = AttendanceCheckin.objects.filter(user=user_profile)
         if date_checkin:
             attendance_data = attendance_data.filter(date_checkin=date_checkin)
 
-        # Update presence status and calculate attendance count and percentage
+        # Apply room and department filters if selected
+        if room_filter:
+            attendance_data = attendance_data.filter(room=room_filter)
+        if department_filter:
+            attendance_data = attendance_data.filter(department=department_filter)
+
         attendance_count = {}
         for record in attendance_data:
             presence_status = "Present" if record.presence else "Absent"
 
-            # Count attendance for each student
-            student_number = record.student_number
-
-            if student_number not in attendance_count:
-                attendance_count[student_number] = {
+            # Create a key for the user's student number if not already present
+            if user_profile.student_number not in attendance_count:
+                attendance_count[user_profile.student_number] = {
                     'present': 0,
                     'absent': 0,
-                    'name': f"{record.first_name} {record.last_name}",
-                    'att_name': attendance.att_name,
+                    'att_name': record.att_name.att_name,
                     'room': record.room,
                     'department': record.department,
                 }
 
-            # Increment count
+            # Increment the count of present or absent based on the attendance record
             if presence_status == "Present":
-                attendance_count[student_number]['present'] += 1
+                attendance_count[user_profile.student_number]['present'] += 1
             else:
-                attendance_count[student_number]['absent'] += 1
+                attendance_count[user_profile.student_number]['absent'] += 1
 
-        # Create progress report with percentages
+            # Collect rooms and departments for filtering
+            rooms.add(record.room)
+            departments.add(record.department)
+
+        # Prepare progress report with attendance percentage
         for student_number, data in attendance_count.items():
             total_attendance = data['present'] + data['absent']
             attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
             status = "ผ่าน" if attendance_percentage >= 80 else "ไม่ผ่าน"
 
+            # Store the report in the progress_reports dictionary under the activity name
             if data['att_name'] not in progress_reports:
                 progress_reports[data['att_name']] = []
 
             progress_reports[data['att_name']].append({
-                'student_number': student_number,
-                'name': data['name'],
-                'room': data['room'],
-                'department': data['department'],
                 'present': data['present'],
                 'absent': data['absent'],
                 'percentage': round(attendance_percentage, 2),
                 'status': status,
             })
 
-    context = {'attendances': attendances, 'progress_reports': progress_reports}
-    return render(request, 'attendance/attendance_report.html', context)
+        # Debugging output
+        print(f"Progress Reports: {progress_reports}")  # Check what is being stored
+
+    context = {
+        'attendances': attendances,
+        'progress_reports': progress_reports,  # Pass the progress reports to the template
+        'rooms': sorted(rooms),
+        'departments': sorted(departments),
+        'room_filter': room_filter,
+        'department_filter': department_filter,
+        'date_checkin': date_checkin,
+        'user_info': user_info,  # Add user details to the context
+    }
+    return render(request, 'attendance/self_report.html', context)
 
 class AttendanceFilter(FilterSet):
     class Meta:

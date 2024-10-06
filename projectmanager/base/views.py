@@ -40,34 +40,6 @@ class StudentListView(ListView):
     model = Profile
     template_name = 'base/students.html'
 
-def get(self, request):
-    students = Profile.objects.all()
-    return render(request, 'your_template.html', {'object_list': students})
-
-    
-def generate_qr_code(request):
-    data = "Profile"
-    qr = qrcode.QRCode(
-        version=1,
-        error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
-    )
-    qr.add_data(data)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # บันทึกภาพ QR code เป็นไฟล์
-    img_path = "media/qr_codes/qr_code.png"
-    img.save(img_path)
-
-    # ส่งภาพ QR code กลับเป็น HttpResponse
-    with open(img_path, "rb") as f:
-        response = HttpResponse(f.read(), content_type="image/png")
-        response["Content-Disposition"] = "attachment; filename=qr_code.png"
-    return response
-    pass
-
 class StudentFilter(django_filters.FilterSet):
     degree = ChoiceFilter(choices=Profile.DEGREE_CHOICES, field_name='degree')
     department = ChoiceFilter(choices=Profile.DEPARTMENT_CHOICES, field_name='department')

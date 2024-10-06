@@ -1,9 +1,11 @@
-<ul class="shadow-sm bg-body-tertiary rounded nav col-12 col-lg-auto justify-content-center my-md-0 fixed-bottom d-flex">
+{% if request.user.is_authenticated %}
+<ul
+  class="shadow-sm bg-body-tertiary rounded nav col-12 col-lg-auto justify-content-center my-md-0 fixed-bottom d-flex">
   <li>
-      <a href="{% url 'activity-list' %}" class="nav-link text-dark text-center">
-        <i class="fa-solid fa-bullhorn bi d-block mx-auto mb-1 icon-responsive"></i>
-        <span class="text-responsive">กิจกรรมพิเศษ</span>
-      </a>
+    <a href="{% url 'activity-list' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-bullhorn bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">กิจกรรมพิเศษ</span>
+    </a>
   </li>
   <!-- <li>
     <a href="#" class="nav-link text-dark text-center">
@@ -29,8 +31,15 @@
       <span class="text-responsive">รายงาน</span>
     </a>
   </li>
+  <li>
+    <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">รวม</span>
+    </a>
+  </li>
 </ul>
-
+{% else %}
+{% endif %}
 <style>
 .icon-responsive {
   font-size: 2rem; /* Default size for large screens */

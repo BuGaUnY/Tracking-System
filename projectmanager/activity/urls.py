@@ -22,6 +22,8 @@ urlpatterns = [
     path('attendance/checkin/', views.attendance_checkin, name='attendance'),
     path('attendance/bulk_checkin/<int:pk>/', views.bulk_checkin, name='bulk_checkin'),
     path('report/<int:pk>/', views.attendance_report, name='attendance_report'),
+    path('report/sum_report/', views.sum_report, name='sum_report'),
+    path('report/self/', views.self_report, name='self_report'),
     path('attendance/search/', views.attendancesearch, name='attendance_search'),
 ]
 

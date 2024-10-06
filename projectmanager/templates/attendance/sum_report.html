@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>รายงานรวมการเข้าร่วม</h2>
+
+<!-- แสดงรายงานการเข้าร่วมกิจกรรมรวม -->
+<table>
+    <thead>
+        <tr>
+            <th>รหัสประจำตัว</th>
+            <th>ชื่อ-สกุล</th>
+            <th>แผนก/ชั้น/กลุ่ม</th>
+            <th>กิจกรรมเข้าแถว</th>
+            <th>กิจกรรมชมรม</th>
+            <th>กิจกรรมโฮมรูม</th>
+            <th>กิจกรรมลูกเสือ</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for student_number, details in progress_reports.items %}
+            <tr>
+                <td>{{ student_number }}</td>
+                <td>{{ details.name }}</td>
+                <td>{{ details.room }} {{ details.department }}</td>
+                <td class="text-center">{{ details.activities.line_up|default:"-" }}</td>
+                <td class="text-center">{{ details.activities.club|default:"-" }}</td>
+                <td class="text-center">{{ details.activities.homeroom|default:"-" }}</td>
+                <td class="text-center">{{ details.activities.scout|default:"-" }}</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% if not progress_reports %}
+    <p>ไม่มีข้อมูลการเข้าร่วมในช่วงเวลานี้</p>
+{% endif %}
+
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 5px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        text-align: center;
+        background-color: #f0f0f0;
+    }
+
+    h1 {
+        text-align: center;
+    }
+</style>
+{% endblock %}

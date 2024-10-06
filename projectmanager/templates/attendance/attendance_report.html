@@ -2,45 +2,84 @@
 {% load static %}
 {% load date_th %}
 {% block content %}
-{% if progress_reports %}
-    {% for att_name, report in progress_reports.items %}
-        <h2>รายงานความก้าวหน้า{{ att_name }}</h2>
-        <table>
-            <tr>
-                <th>รหัสประจำตัว</th>
-                <th>ชื่อ-สกุล</th>
-                <th>ห้อง</th>
-                <th>แผนก</th>
-                <th>เข้า</th>
-                <th>ขาด</th>
-                <th>เปอร์เซ็นต์</th>
-                <th>สถานะ</th>
-            </tr>
-            {% for item in report %}
-            <tr>
-                <td>{{ item.student_number }}</td>
-                <td>{{ item.name }}</td>
-                <td class="text-center">{{ item.room }}</td>
-                <td>{{ item.department }}</td>
-                <td class="text-center">{{ item.present }}</td>
-                <td class="text-center">{{ item.absent }}</td>
-                <td class="text-center">{{ item.percentage }}</td>
-                <td class="text-center">{{ item.status }}</td>
-            </tr>
-            {% endfor %}
-        </table>
-    {% endfor %}
+
+<!-- Form for filtering -->
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label for="room">ห้อง</label>
+            <select name="room" id="room" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for room in rooms %}
+                    <option value="{{ room }}" {% if room_filter == room %}selected{% endif %}>
+                        {{ room }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="department">แผนก</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for department in departments %}
+                    <option value="{{ department }}" {% if department_filter == department %}selected{% endif %}>
+                        {{ department }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary mt-4">ค้นหา</button>
+        </div>
+    </div>
+</form>
+
+<!-- Display progress reports only if room and department are selected -->
+{% if room_filter and department_filter %}
+    {% if progress_reports %}
+        {% for att_name, report in progress_reports.items %}
+            <h2>รายงานความก้าวหน้า {{ att_name }}</h2>
+            <table>
+                <tr>
+                    <th>รหัสประจำตัว</th>
+                    <th>ชื่อ-สกุล</th>
+                    <th>ห้อง</th>
+                    <th>แผนก</th>
+                    <th>เข้า</th>
+                    <th>ขาด</th>
+                    <th>เปอร์เซ็นต์</th>
+                    <th>สถานะ</th>
+                </tr>
+                {% for item in report %}
+                {% if item.room == room_filter and item.department == department_filter %}
+                <tr>
+                    <td>{{ item.student_number }}</td>
+                    <td>{{ item.name }}</td>
+                    <td class="text-center">{{ item.room }}</td>
+                    <td>{{ item.department }}</td>
+                    <td class="text-center">{{ item.present }}</td>
+                    <td class="text-center">{{ item.absent }}</td>
+                    <td class="text-center">{{ item.percentage }}</td>
+                    <td class="text-center">{{ item.status }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </table>
+        {% endfor %}
+    {% else %}
+        <p class="text-center">ไม่มีข้อมูลที่แสดงในรายงาน</p>
+    {% endif %}
 {% else %}
-    <p>ไม่มีข้อมูลที่แสดงในรายงาน</p>
+    <p class="text-center">กรุณาเลือก ห้อง และ แผนก ก่อนแสดงรายงานความก้าวหน้า</p>
 {% endif %}
+
 <style>
     table {
         border-collapse: collapse;
         width: 100%;
     }
 
-    th,
-    td {
+    th, td {
         padding: 5px;
         border: 1px solid #ddd;
     }
@@ -54,4 +93,5 @@
         text-align: center;
     }
 </style>
+
 {% endblock %}

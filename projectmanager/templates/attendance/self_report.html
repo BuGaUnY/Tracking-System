@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1 class="text-center">รายงานส่วนตัว</h1>
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title text-center mb-1">{{ user_info.name }}</h5>
+            <p class="card-text mb-1">รหัสประจำตัว: {{ user_info.student_number }}</p>
+            <p class="card-text mb-1">ระดับชั้น: {{ user_info.degree }}</p>
+            <p class="card-text mb-1">ห้อง: {{ user_info.room }}</p>
+            <p class="card-text mb-1">แผนก: {{ user_info.department }}</p>
+
+            <table class="table table-bordered text-center mt-4">
+                <thead>
+                    <tr>
+                        <th>กิจกรรม</th>
+                        <th>เข้า</th>
+                        <th>ขาด</th>
+                        <th>สถานะ</th>
+                        <th>เปอร์เซ็นต์</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if progress_reports %}
+                        {% for att_name, reports in progress_reports.items %}
+                            {% for item in reports %}
+                            <tr>
+                                <td>{{ item.att_name }}</td>
+                                <td>{{ item.present }}</td>
+                                <td>{{ item.absent }}</td>
+                                <td>{{ item.status }}</td>
+                                <td>{{ item.percentage }}%</td>
+                            </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5">No attendance records available</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>            
+        </div>
+    </div>
+</div>
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        background-color: #f0f0f0;
+    }
+
+    h1 {
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}

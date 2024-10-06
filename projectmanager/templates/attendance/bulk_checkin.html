@@ -10,9 +10,9 @@
 <form method="get" class="mb-4">
     <div class="row">
         <div class="col-md-4">
-            <label for="room">Room:</label>
+            <label for="room">ห้อง</label>
             <select name="room" id="room" class="form-control">
-                <option value="">All Rooms</option>
+                <option value="">กรุณาเลือก</option>
                 {% for profile in grouped_profiles %}
                 <option value="{{ profile.room }}" {% if room_filter == profile.room %}selected{% endif %}>
                     {{ profile.room }}
@@ -21,9 +21,9 @@
             </select>
         </div>
         <div class="col-md-4">
-            <label for="department">Department:</label>
+            <label for="department">แผนก</label>
             <select name="department" id="department" class="form-control">
-                <option value="">All Departments</option>
+                <option value="">กรุณาเลือก</option>
                 {% for profile in grouped_profiles %}
                 <option value="{{ profile.department }}" {% if department_filter == profile.department %}selected{% endif %}>
                     {{ profile.department }}
@@ -37,65 +37,65 @@
     </div>
 </form>
 
-<!-- Attendance Check-In Form -->
-<form method="post">
-    {% csrf_token %}
-    {{ formset.management_form }}
-    <div class="formset-container">
+<!-- Check if filters are applied before showing attendance form -->
+{% if room_filter or department_filter %}
+    <!-- Attendance Check-In Form -->
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <div class="formset-container">
+            {% if formset %}
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>รหัสประจำตัว</th>
+                            <th>ชื่อ-สกุล</th>
+                            <th>ห้อง</th>
+                            <th>ชั้นปี</th>
+                            <th>แผนก</th>
+                            <th>สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in formset %}
+                        <tr>
+                            <td>{{ form.student_number.value }}{{ form.student_number }}</td>
+                            <td>{{ form.first_name.value }} {{ form.last_name.value }} {{ form.first_name }} {{ form.last_name }}</td>
+                            <td class="text-center">{{ form.room.value }} {{ form.room }}</td>
+                            <td class="text-center">{{ form.degree.value }} {{ form.degree }}</td>
+                            <td>{{ form.department.value }} {{ form.department }}</td>
+                            <td class="text-center">{{ form.presence }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-center">ไม่พบรายชื่อนักเรียน</p>
+            {% endif %}
+        </div>
         {% if formset %}
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>รหัสประจำตัว</th>
-                        <th>ชื่อ-สกุล</th>
-                        <th>ห้อง</th>
-                        <th>ชั้นปี</th>
-                        <th>แผนก</th>
-                        <th>สถานะ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for form in formset %}
-                    <tr>
-                        <td>{{ form.student_number.value }}{{ form.student_number }}</td>
-                        <td>{{ form.first_name.value }} {{ form.last_name.value }} {{ form.first_name }} {{ form.last_name }}</td>
-                        <td class="text-center">{{ form.room.value }} {{ form.room }}</td>
-                        <td class="text-center">{{ form.degree.value }} {{ form.degree }}</td>
-                        <td>{{ form.department.value }} {{ form.department }}</td>
-                        <td class="text-center">{{ form.presence }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        {% else %}
-            <p class="text-center">ไม่พบรายชื่อนักเรียน</p>
+            <button class="btn btn-success" type="submit">บันทึกการเช็คชื่อ</button>
         {% endif %}
-    </div>
-    {% if formset %}
-        <button class="btn btn-success" type="submit">บันทึกการเช็คชื่อ</button>
-    {% endif %}
-</form>
+    </form>
+{% else %}
+    <p class="text-center">กรุณาเลือกห้องหรือแผนกเพื่อกรองข้อมูลก่อน</p>
+{% endif %}
 
 <style>
     table {
         border-collapse: collapse;
-        /* Combine cell borders */
         width: 100%;
-        /* Make table fit the container */
     }
 
     th,
     td {
         padding: 5px;
-        /* Add padding around cell content */
         border: 1px solid #ddd;
-        /* Add thin border */
     }
 
     th {
         text-align: center;
         background-color: #f0f0f0;
-        /* Highlight table headers */
     }
 
     h1 {
@@ -103,3 +103,4 @@
     }
 </style>
 {% endblock %}
+
