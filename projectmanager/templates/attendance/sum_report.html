@@ -1,8 +1,41 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>รายงานรวมการเข้าร่วม</h2>
+<h2>รายงานความก้าวหน้ารวม</h2>
 
+<!-- Filter Form -->
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-4">
+            <label for="room">ห้อง</label>
+            <select name="room" id="room" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for room in rooms %}
+                    <option value="{{ room }}" {% if room_filter == room %}selected{% endif %}>
+                        {{ room }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label for="department">แผนก</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for department in departments %}
+                    <option value="{{ department }}" {% if department_filter == department %}selected{% endif %}>
+                        {{ department }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <button type="submit" class="btn btn-primary mt-4">ค้นหา</button>
+        </div>
+    </div>
+</form>
+
+{% if room_filter and department_filter %}
+{% for student_number, details in progress_reports.items %}
 <!-- แสดงรายงานการเข้าร่วมกิจกรรมรวม -->
 <table>
     <thead>
@@ -17,7 +50,6 @@
         </tr>
     </thead>
     <tbody>
-        {% for student_number, details in progress_reports.items %}
             <tr>
                 <td>{{ student_number }}</td>
                 <td>{{ details.name }}</td>
@@ -27,14 +59,31 @@
                 <td class="text-center">{{ details.activities.homeroom|default:"-" }}</td>
                 <td class="text-center">{{ details.activities.scout|default:"-" }}</td>
             </tr>
-        {% endfor %}
-    </tbody>
+    </tbody> 
 </table>
+{% empty %}
+    <p>ไม่พบข้อมูล</p>
+{% endfor %}
 
-{% if not progress_reports %}
-    <p>ไม่มีข้อมูลการเข้าร่วมในช่วงเวลานี้</p>
+{% if progress_reports %}
+    <!-- ถ้าพบข้อมูล แสดงทั้งปุ่ม Excel และ กลับ -->
+    <button class="btn btn-success mt-1">
+        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="nav-link text-dark text-center">Excel</a>
+    </button>
+    <button class="btn btn-warning mt-1">
+        <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">กลับ</a>
+    </button>
+{% else %}
+    <!-- ถ้าไม่พบข้อมูล แสดงเฉพาะปุ่ม กลับ -->
+    <button class="btn btn-warning mt-1">
+        <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">กลับ</a>
+    </button>
 {% endif %}
 
+
+{% else %}
+<p class="text-center">กรุณาเลือก ห้อง และ แผนก ก่อนแสดงรายงาน</p>
+{% endif %}
 <style>
     table {
         border-collapse: collapse;

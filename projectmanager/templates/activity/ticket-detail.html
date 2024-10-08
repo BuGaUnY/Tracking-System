@@ -13,8 +13,7 @@
     <div class="card-body">
         <h5 class="card-title">{{ticket.activity}}</h5>
             <p class="text-muted">วันที่ : {{ ticket.activity.date_start|date_th }} เวลา : {{ ticket.activity.date_start|time_th }} น.</p>
-          <p class="card-text">ชื่อ : {{ticket.first_name}}</p>
-          <p class="card-text">นามสกุล : {{ticket.last_name}}</p>
+          <p class="card-text">ชื่อ-สกุล : {{ticket.first_name}}  {{ticket.last_name}}</p>
           <p class="card-text">ห้อง : {{ticket.room}}</p>
           <p class="card-text">ชั้นปี : {{ticket.degree}}</p>
           <p class="card-text">แผนก : {{ticket.department}}</p>

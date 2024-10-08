@@ -5,12 +5,13 @@ from django.urls import reverse
 from projectmanager import settings
 from linebot import LineBotApi
 from linebot.models import *
-import uuid
+import uuid, os
 import qrcode
 from linebot.models import FlexSendMessage
 from django.core.validators import MinValueValidator, MaxValueValidator
 from base.models import Profile
 from django.utils import timezone
+from django.core.files.storage import FileSystemStorage
 
 line_bot_api = LineBotApi(settings.channel_access_token)
 
@@ -126,9 +127,9 @@ class Activity(models.Model):
         return reverse('organizer-owner-activity-ticket-list', kwargs={'pk': self.pk})
     
 class Ticket(models.Model):
-    uid = models.UUIDField(default = uuid.uuid4, editable=False, unique=True)
-    activity = models.ForeignKey(Activity ,on_delete=models.SET_NULL, null=True)
-    profile = models.ForeignKey('base.Profile' ,on_delete=models.SET_NULL, null=True ,blank=True, related_name='ticket_profile')
+    uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    activity = models.ForeignKey(Activity, on_delete=models.SET_NULL, null=True)
+    profile = models.ForeignKey('base.Profile', on_delete=models.SET_NULL, null=True, blank=True, related_name='ticket_profile')
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     room = models.CharField(max_length=5, null=True)
@@ -140,10 +141,7 @@ class Ticket(models.Model):
     date_create = models.DateTimeField(auto_now_add=True, blank=False)
 
     class Meta:
-        unique_together = (
-            'activity',
-            'profile',
-        )
+        unique_together = ('activity', 'profile')
 
     def __str__(self):
         return f'{self.profile} - {self.activity}'
@@ -151,20 +149,38 @@ class Ticket(models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.__original_checkin = self.checkin
-    
+
     def save(self, *args, **kwargs):
+        # Generate QR code with both ticket_uid and activity_uid
         qr = qrcode.QRCode(
-                version=1,
-                error_correction=qrcode.constants.ERROR_CORRECT_L,
-                box_size=10,
-                border=4,
-            )
-        qr.add_data(self.uid)
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        
+        # Construct the check-in URL with ticket_uid and activity_uid
+        checkin_url = f'{settings.domain}/ticket/checkin/?ticket_uid={self.uid}&activity_uid={self.activity.uid}'
+        qr.add_data(checkin_url)  # Add URL to QR code
         qr.make(fit=True)
+
+        # Save QR code image
         img = qr.make_image(fill_color="black", back_color="white")
-        with open(f'media/ticket-qrcode/{self.uid}.png', 'wb') as f:
-            img.save(f)
+        
+        # Create directory if it doesn't exist
+        qrcode_dir = os.path.join(settings.MEDIA_ROOT, 'ticket-qrcode')
+        os.makedirs(qrcode_dir, exist_ok=True)
+
+        qr_image_path = os.path.join(qrcode_dir, f'{self.uid}.png')
+        img.save(qr_image_path)
+
+        # Update the qrcode field with the relative path
         self.qrcode = f'ticket-qrcode/{self.uid}.png'
+        
+        # Call the parent save method to save the ticket
+        super().save(*args, **kwargs)
+        
+        # ถ้าสถานะ checkin เปลี่ยนให้ส่งข้อความทาง Line ตามเดิม
         if self.checkin == True and self.__original_checkin == False:
             social_user = SocialAccount.objects.get(user=self.profile.user)
             flex_message = FlexSendMessage(

@@ -1,57 +1,139 @@
 {% extends 'base.html' %}
 
 {% block title %}
-<title>Check in | {{ activity.title }} </title>
+    <title>Check in | {{ activity.title }}</title>
 {% endblock %}
 
 {% block content %}
-<div class="card mb-2">
-    <div class="card-body">
-        <h5 class="card-title">{{ activity.title }}</h5>
-        <div class="d-grid gap-2">
-            <a href="{{ activity.get_absolute_organizer_owner_activity_ticket_list_url }}" class="btn btn-success">
-                <i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม</a>
+<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <div class="card mb-2" style="width: 100%;">
+        <div class="card-body">
+            <h5 class="card-title">{{ activity.title }}</h5>
+            <div class="d-grid gap-2">
+                <a href="{{ activity.get_absolute_organizer_owner_activity_ticket_list_url }}" class="btn btn-success">
+                    <i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม
+                </a>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-body">
-        <h5 class="card-title">{{ activity.title }}</h5>
-        <p class="card-text">Check in QR Code สำหรับผู้เข้าร่วมกิจกรรม</p>
-        <div class="d-grid gap-2">
-            <button type="button" class="btn btn-warning" onclick="scanQRCode()">
-                <i class="fa-solid fa-qrcode"></i> Scan QR Code
-            </button>
+    <div class="card mb-2" style="width: 100%;">
+        <div class="card-body">
+            <p class="card-text">Check in QR Code สำหรับผู้เข้าร่วมกิจกรรม</p>
+            <div class="d-grid gap-2">
+                <button type="button" class="btn btn-warning" onclick="startScanner()">
+                    <i class="fa-solid fa-qrcode"></i> Scan QR Code
+                </button>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center">
+            <video id="qr-reader" style="width: 300px; height: 300px;"></video>
         </div>
     </div>
+
+    <form id="check-in" method="post" class="d-none"> <!-- ซ่อนฟอร์ม -->
+        {% csrf_token %}
+        <input type="hidden" name="activity_uid" value="{{ activity.uid }}">
+        <input type="hidden" id="scanCode" name="ticket_uid">
+    </form>
 </div>
 
-<div id="check-in-partials"></div>
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<form id="check-in" hx-post="{% url 'ticket-checkin' %}" hx-target="#check-in-partials">
-    <input type="text" name="activity_uid" value="{{ activity.uid }}" style="visibility:hidden">
-    <input type="text" id="scanCode" name="ticket_uid" style="visibility:hidden">
-    <button type="submit" id="clickButton" style="visibility:hidden">submit</button>
-</form>
+<!-- ZXing (QR Code Reader) -->
+<script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <script>
-    async function scanCode() {
-          if (liff.isInClient()) {
-              const result = await liff.scanCode()
-              document.getElementById("scanCode").value = result.value
-              if (result.value) {
-                document.getElementById('clickButton').click();
-              }
-          } else {
+function startScanner() {
+    const codeReader = new ZXing.BrowserQRCodeReader();
+    console.log('Starting the QR code reader...');
+
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+    codeReader.decodeOnceFromVideoDevice(null, 'qr-reader')
+        .then((result) => {
+            console.log('QR Code scanned:', result.text);
+            if (uuidPattern.test(result.text)) { // ตรวจสอบว่าเป็น UUID ที่ถูกต้อง
+                document.getElementById("scanCode").value = result.text;
+
+                // ส่งข้อมูล POST ไปยังเซิร์ฟเวอร์
+                const formData = new FormData(document.getElementById("check-in"));
+                formData.set("ticket_uid", result.text); // เพิ่ม ticket_uid ที่สแกนได้
+
+                fetch("{% url 'ticket-checkin' %}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}' // csrf token
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire({
+                            position: 'center',
+                            icon: 'success',
+                            title: 'ตรวจสอบตั๋วสำเร็จ',
+                            text: 'ตั๋ว UID: ' + data.ticket_uid,
+                            showConfirmButton: true
+                        });
+                    } else {
+                        Swal.fire({
+                            position: 'center',
+                            icon: 'error',
+                            title: 'ตรวจสอบตั๋วไม่สำเร็จ',
+                            text: data.error,
+                            showConfirmButton: true
+                        });
+                    }
+                })
+                .catch(err => {
+                    console.error("Error sending ticket data:", err);
+                    Swal.fire({
+                        position: 'center',
+                        icon: 'error',
+                        title: 'มีข้อผิดพลาดในการส่งข้อมูล',
+                        text: err.message,
+                        showConfirmButton: true
+                    });
+                });
+            } else {
+                Swal.fire({
+                    position: 'center',
+                    icon: 'error',
+                    title: 'ข้อมูลที่สแกนไม่ถูกต้อง',
+                    text: 'กรุณาสแกน QR Code ที่ถูกต้อง',
+                    showConfirmButton: true
+                });
+            }
+        })
+        .catch((err) => {
+            console.error("Error scanning QR Code:", err);
             Swal.fire({
-              position: 'center',
-              icon: 'error',
-              title: 'กรุณาเปิดในแอพพลิเคชั่น Line',
-              showConfirmButton: false,
-              timer: 1750
-            })
-          }
-        }
+                position: 'center',
+                icon: 'error',
+                title: 'ไม่สามารถอ่าน QR Code ได้',
+                text: err.message,
+                showConfirmButton: true
+            });
+        });
+}
 </script>
+
+<style>
+    .container {
+        display: flex;
+        flex-direction: column; /* จัดแนวคาร์ดเป็นแนวตั้ง */
+    }
+
+    .card {
+        margin: 10px; /* เพิ่มพื้นที่ว่างระหว่างคาร์ด */
+    }
+</style>
 {% endblock %}

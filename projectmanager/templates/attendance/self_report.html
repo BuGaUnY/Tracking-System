@@ -1,66 +1,65 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block content %}
-<div class="container mt-5">
-    <h1 class="text-center">รายงานส่วนตัว</h1>
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title text-center mb-1">{{ user_info.name }}</h5>
-            <p class="card-text mb-1">รหัสประจำตัว: {{ user_info.student_number }}</p>
-            <p class="card-text mb-1">ระดับชั้น: {{ user_info.degree }}</p>
-            <p class="card-text mb-1">ห้อง: {{ user_info.room }}</p>
-            <p class="card-text mb-1">แผนก: {{ user_info.department }}</p>
-
-            <table class="table table-bordered text-center mt-4">
-                <thead>
-                    <tr>
-                        <th>กิจกรรม</th>
-                        <th>เข้า</th>
-                        <th>ขาด</th>
-                        <th>สถานะ</th>
-                        <th>เปอร์เซ็นต์</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if progress_reports %}
-                        {% for att_name, reports in progress_reports.items %}
-                            {% for item in reports %}
-                            <tr>
-                                <td>{{ item.att_name }}</td>
-                                <td>{{ item.present }}</td>
-                                <td>{{ item.absent }}</td>
-                                <td>{{ item.status }}</td>
-                                <td>{{ item.percentage }}%</td>
-                            </tr>
-                            {% endfor %}
-                        {% endfor %}
-                    {% else %}
-                        <tr>
-                            <td colspan="5">No attendance records available</td>
-                        </tr>
-                    {% endif %}
-                </tbody>
-            </table>            
+<div class="container">
+    <h1>รายงานการเช็คชื่อของ {{ user_profile.first_name }} {{ user_profile.last_name }}</h1>
+    <div class="card-body bg-body-tertiary p-4 rounded">
+        <div class="border p-3 bg-body-secondary mt-3 mb-3 rounded">
+                <p class="text-muted mb-1">รหัสนักเรียน-นักศึกษา : {{user_profile.student_number}}</p>
+                <p class="text-muted mb-1">ระดับชั้น : {{user_profile.degree}}</p>
+                <p class="text-muted mb-1">ห้อง : {{user_profile.room}}</p>
+                <p class="text-muted mb-1">แผนก : {{user_profile.department}}</p>
         </div>
+
+
+    <table class="p-4 rounded">
+        <thead>
+            <tr>
+                <th>กิจกรรม</th>
+                <th>เข้า</th>
+                <th>ขาด</th>
+                <th>เปอร์เซ็นต์</th>
+                <th>สถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for activity in attendance_summary %}
+            <tr>
+                <td>{{ activity.activity }}</td>
+                <td>{{ activity.present }}</td>
+                <td>{{ activity.absent }}</td>
+                <td>{{ activity.attendance_percentage|floatformat:1 }}%</td>
+                <td>{{ activity.status }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5">ยังไม่มีข้อมูลการเช็คชื่อ</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
     </div>
 </div>
+
 <style>
     table {
         border-collapse: collapse;
         width: 100%;
     }
 
-    th, td {
-        padding: 8px;
+    th,
+    td {
+        padding: 5px;
         border: 1px solid #ddd;
     }
 
     th {
+        text-align: center;
         background-color: #f0f0f0;
     }
 
     h1 {
-        margin-bottom: 20px;
+        text-align: center;
     }
 </style>
 {% endblock %}

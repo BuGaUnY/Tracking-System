@@ -226,6 +226,7 @@ channel_secret = 'deaddb80853cf5a78fb2ae159fddba5b'
 domain_media = 'https://frame-dev-test.frame-dev.com/media'
 # domain_media = 'https://dev.entv.events/media'
 domain_liff = 'https://liff.line.me/2006304809-k4W7Wdro'
+domain = 'https://652f-2403-6200-8831-1d34-51f8-29ed-3d47-4184.ngrok-free.app'
 
 # MAPBOX
 if os.name == 'nt':

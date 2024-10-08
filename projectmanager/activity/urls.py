@@ -25,6 +25,7 @@ urlpatterns = [
     path('report/sum_report/', views.sum_report, name='sum_report'),
     path('report/self/', views.self_report, name='self_report'),
     path('attendance/search/', views.attendancesearch, name='attendance_search'),
+    path('report/export/', views.export_to_excel, name='export_to_excel'),
 ]
 
 def my_view(request, org_pk, ev_pk):
