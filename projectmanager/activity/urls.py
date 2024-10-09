@@ -17,6 +17,7 @@ urlpatterns = [
     path('ticket/<int:pk>/', views.TicketDetail.as_view(), name='ticket-detail'),
     path('ticket/<int:pk>/update/', views.TicketUpdate.as_view(), name='ticket-update'),
     path('ticket/checkin/', views.TicketCheckin.as_view(), name='ticket-checkin'),
+    path('ticket/checkin/success/', views.TicketCheckinSuccessView.as_view(), name='ticket-checkin-success'),
     path('attendance/', views.AttendanceList.as_view(), name='attendance_list'),
     path('report/', views.ReportList.as_view(), name='report_list'),
     path('attendance/checkin/', views.attendance_checkin, name='attendance'),

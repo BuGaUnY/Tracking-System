@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_date
 from django.db.models import Count, Q
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
-from .models import Activity, Organizer, Ticket , Attendance, AttendanceCheckin
+from .models import Activity, Organizer , Attendance, AttendanceCheckin, Ticket
 from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
@@ -23,8 +23,15 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 import logging , uuid , re
 from openpyxl import Workbook
 from django.views import View
+from django.db import transaction
+
 
 logger = logging.getLogger(__name__)
+
+# try:
+#     line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
+# except Exception as e:
+#     logger.error("Error sending message: %s", e)
 
 # Create your views here.
 
@@ -226,67 +233,50 @@ class TicketUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         return reverse('ticket-detail', kwargs={'pk': self.kwargs['pk']})
 
 class TicketCheckin(LoginRequiredMixin, View):
-    def post(self, request, *args, **kwargs):
-        logger.info("POST request received for ticket check-in")
-        
-        activity_uid = request.POST.get('activity_uid')
-        ticket_uid = request.POST.get('ticket_uid')
+    def get(self, request, *args, **kwargs):
+        # ดึงค่าพารามิเตอร์จาก GET request
+        activity_uid = request.GET.get('activity_uid')
+        ticket_uid = request.GET.get('ticket_uid')
 
-        logger.debug(f"Received activity_uid: {activity_uid}, ticket_uid: {ticket_uid}")
-
-        # Regular expression to validate UUID format
-        uuid_pattern = re.compile(r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-
+        # ตรวจสอบว่ามีการส่งค่าทั้งสองตัวเข้ามาหรือไม่
         if not activity_uid or not ticket_uid:
-            logger.error("Missing activity_uid or ticket_uid")
             return JsonResponse({'success': False, 'error': 'Missing activity_uid or ticket_uid'}, status=400)
 
-        if not uuid_pattern.match(activity_uid) or not uuid_pattern.match(ticket_uid):
-            logger.error(f"Invalid UUID format for activity_uid: {activity_uid} or ticket_uid: {ticket_uid}")
-            return JsonResponse({'success': False, 'error': 'Invalid UUID format'}, status=400)
-
+        # พยายามค้นหา Activity และ Ticket
         try:
             activity = Activity.objects.get(uid=activity_uid)
-            logger.info(f"Activity found: {activity.uid}")
-        except Activity.DoesNotExist:
-            logger.error(f"Activity not found with uid: {activity_uid}")
-            return JsonResponse({'success': False, 'error': 'Activity not found'}, status=404)
-
-        try:
             ticket = Ticket.objects.get(uid=ticket_uid, activity=activity)
-            logger.info(f"Ticket found: {ticket.uid}")
-            return JsonResponse({'success': True, 'ticket_uid': ticket.uid})
+        except Activity.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Activity not found'}, status=404)
         except Ticket.DoesNotExist:
-            logger.error(f"Ticket not found with uid: {ticket_uid} for activity: {activity_uid}")
             return JsonResponse({'success': False, 'error': 'Ticket not found'}, status=404)
 
-# View ที่ใช้ดึงข้อมูลมาแสดงใน partial
-def post(self, request, *args, **kwargs):
-    if request.htmx:
-        # ค้นหา Activity จาก activity_uid
-        try:
-            activity = Activity.objects.get(uid=request.POST['activity_uid'])
-        except Activity.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'Activity not found'})
-
-        # ค้นหา Ticket จาก ticket_uid และ activity
-        try:
-            ticket = Ticket.objects.get(uid=request.POST['ticket_uid'], activity=activity)
-        except Ticket.DoesNotExist:
-            ticket = None
-
-        # Render partial view พร้อมกับข้อมูลของ ticket
+        # ถ้าพบทั้ง Activity และ Ticket ให้ส่งข้อมูลไปยัง template
         return render(request, 'activity/partials/ticket-checkin.html', {'ticket': ticket})
 
-
-class TicketCheckinSuccess(LoginRequiredMixin, View):
+class TicketCheckinSuccessView(View):
     def post(self, request, *args, **kwargs):
-        if request.htmx:
-            ticket = get_object_or_404(Ticket, uid=request.POST['ticket_uid'])
-            print(ticket)
-            ticket.checkin = True
-            ticket.save()
-            return render(request, 'activity/partials/ticket-detail-partials.html', {'ticket': ticket})
+        ticket_uid = request.POST.get('ticket_uid')
+
+        # Get the ticket or return a 404 error if it doesn't exist
+        ticket = get_object_or_404(Ticket.objects.select_for_update(), uid=ticket_uid)
+
+        with transaction.atomic():
+            print(f"Before checkin: {ticket.checkin}")
+
+            if not ticket.checkin:
+                ticket.checkin = True  # Update check-in status
+                ticket.save()
+                print(f"After save: {ticket.checkin}")
+
+                # Refresh the ticket from the database to ensure the value is updated
+                ticket.refresh_from_db()
+                print(f"Refreshed checkin status after refresh: {ticket.checkin}")  # Check if it's updated correctly
+
+                return render(request, 'activity/partials/ticket-checkin.html', {'ticket': ticket})
+            else:
+                return JsonResponse({'success': False, 'message': 'Ticket already checked in.'}, status=400)
+
 
 class AttendanceList(ListView):
     model = Attendance
@@ -533,6 +523,7 @@ def sum_report(request):
     }
     return render(request, 'attendance/sum_report.html', context)
 
+
 def export_to_excel(request):
     # ดึงข้อมูลการเข้าร่วมทั้งหมด
     attendances = Attendance.objects.all()
@@ -606,7 +597,6 @@ def export_to_excel(request):
 
     return response
 
-
 @login_required
 def self_report(request):
     # Get the currently logged-in user's profile
@@ -615,9 +605,12 @@ def self_report(request):
     # Fetch attendance records for the user's profile
     attendance_records = AttendanceCheckin.objects.filter(student_number=user_profile.student_number)
 
+    # Fetch ticket records for the user's profile
+    ticket_records = Ticket.objects.filter(profile=user_profile)
+
     # Dictionary to hold attendance summary per activity
     attendance_summary = {}
-
+    
     # Aggregate attendance data for each activity
     for record in attendance_records:
         if record.att_name not in attendance_summary:
@@ -642,10 +635,57 @@ def self_report(request):
             'activity': activity,
         })
 
+    # Ticket summary
+    ticket_summary = {}
+    total_units = 0  # Total units counted for ticket participation
+
+    # Aggregate ticket check-in data
+    for ticket in ticket_records:
+        if ticket.activity not in ticket_summary:
+            ticket_summary[ticket.activity] = {
+                'total_tickets': 0,
+                'checked_in': 0,
+            }
+
+        ticket_summary[ticket.activity]['total_tickets'] += 1
+        if ticket.checkin:
+            ticket_summary[ticket.activity]['checked_in'] += 1
+            # Increment total_units based on activity category
+            if ticket.activity.activity_category == '2 หน่วยกิจ':
+                total_units += 2  # 2 units for large activity
+            elif ticket.activity.activity_category == '1 หน่วยกิจ':
+                total_units += 1  # 1 unit for small activity
+
+    # Calculate ticket check-in status
+    for activity, data in ticket_summary.items():
+        total_tickets = data['total_tickets']
+        checked_in_count = data['checked_in']
+        
+        # Check if the user has checked in to all tickets
+        if total_tickets > 0 and checked_in_count == total_tickets:
+            status = "✅ยืนยันแล้ว"  # All tickets checked in
+        else:
+            status = "❌ยังไม่ยืนยัน"  # Not all tickets checked in
+            
+        data.update({
+            'checked_in_percentage': (checked_in_count / total_tickets * 100) if total_tickets > 0 else 0,
+            'status': status,
+            'activity': activity,
+        })
+
+    # Determine overall status based on total units
+    overall_status = "ไม่ผ่าน"  # Default status
+    if total_units >= 6:
+        overall_status = "ผ่าน"  # User has participated in enough activities
+
     return render(request, 'attendance/self_report.html', {
         'attendance_summary': attendance_summary.values(),  # Pass the summary as a list
+        'ticket_summary': ticket_summary.values(),  # Pass ticket summary as a list
         'user_profile': user_profile,
-    })
+        'total_units': total_units,  # Pass the total units for display
+        'overall_status': overall_status,  # Pass overall status
+    }) 
+
 class AttendanceFilter(FilterSet):
     class Meta:
         model = Profile

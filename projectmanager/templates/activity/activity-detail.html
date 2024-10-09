@@ -15,6 +15,7 @@
         <p class="card-text">{{activity.description}}</p>
         <p class="text-muted">วันที่ : {{activity.date_start|date_th}}</p>
         <p class="text-muted">เวลา : {{activity.date_start|localtime|time_th }} น.</p>
+        <p class="text-muted">จำนวนหน่วยกิจ : {{activity.activity_category}}</p>
         <div class="border p-2 bg-light rounded mb-2">
             {{activity.detail|safe}}
         </div>

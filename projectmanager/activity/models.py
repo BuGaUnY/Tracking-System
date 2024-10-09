@@ -12,19 +12,15 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from base.models import Profile
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
+from django.utils import timezone
 
 line_bot_api = LineBotApi(settings.channel_access_token)
 
 # Create your models here.
 ACTIVITY_CATEGORY = (
-    ('กิจกรรมพิเศษ', 'กิจกรรมพิเศษ'),
-    ('กิจกรรมเข้าแถว', 'กิจกรรมเข้าแถว'),
-    ('กิจกรรมชมรม', 'กิจกรรมชมรม'),
-    ('กิจกรรมโฮมรูม', 'กิจกรรมโฮมรูม'),
-    ('กิจกรรมลูกเสือ', 'กิจกรรมลูกเสือ'),
-    ('กิจกรรม ร.ด.', 'กิจกรรม ร.ด.'),
+    ('1 หน่วยกิจ', '1 หน่วยกิจ'),
+    ('2 หน่วยกิจ', '2 หน่วยกิจ'),
 )
-
 
 class Attendance(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -107,7 +103,7 @@ class Activity(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
     detail = models.TextField()
-    activity_category = models.CharField(max_length=20, null=True, choices=ACTIVITY_CATEGORY, blank=True)
+    activity_category = models.CharField(max_length=20, choices=ACTIVITY_CATEGORY)
     organizer = models.ForeignKey(Organizer, null=True, on_delete=models.SET_NULL)
     date_start = models.DateTimeField(null=True, blank=True)
     status = models.BooleanField(default=True)
@@ -115,7 +111,7 @@ class Activity(models.Model):
     date_create = models.DateTimeField(auto_now_add=True, blank=False)
 
     def __str__(self):
-        return self.title
+        return f'{self.title} - {self.activity_category}'
 
     def get_absolute_url(self):
         return reverse('activity-detail', kwargs={'pk': self.pk})
@@ -135,173 +131,39 @@ class Ticket(models.Model):
     room = models.CharField(max_length=5, null=True)
     degree = models.CharField(max_length=20, null=True)
     department = models.CharField(max_length=100, null=True)
-    checkin = models.BooleanField(default=False)
     qrcode = models.ImageField(upload_to='ticket-qrcode', default='', null=True, blank=True)
+    checkin = models.BooleanField(default=False)
     date_updated = models.DateTimeField(auto_now=True, blank=False)
     date_create = models.DateTimeField(auto_now_add=True, blank=False)
 
+    @property
+    def activity_category(self):
+        return self.activity.activity_category if self.activity else None
     class Meta:
         unique_together = ('activity', 'profile')
 
     def __str__(self):
         return f'{self.profile} - {self.activity}'
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.__original_checkin = self.checkin
 
     def save(self, *args, **kwargs):
-        # Generate QR code with both ticket_uid and activity_uid
+        # Generate a QR code for the ticket
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
-        
-        # Construct the check-in URL with ticket_uid and activity_uid
-        checkin_url = f'{settings.domain}/ticket/checkin/?ticket_uid={self.uid}&activity_uid={self.activity.uid}'
-        qr.add_data(checkin_url)  # Add URL to QR code
+        qr.add_data(self.uid)
         qr.make(fit=True)
-
-        # Save QR code image
         img = qr.make_image(fill_color="black", back_color="white")
         
-        # Create directory if it doesn't exist
-        qrcode_dir = os.path.join(settings.MEDIA_ROOT, 'ticket-qrcode')
-        os.makedirs(qrcode_dir, exist_ok=True)
-
-        qr_image_path = os.path.join(qrcode_dir, f'{self.uid}.png')
-        img.save(qr_image_path)
-
-        # Update the qrcode field with the relative path
-        self.qrcode = f'ticket-qrcode/{self.uid}.png'
+        # Save the QR code image
+        with open(f'media/ticket-qrcode/{self.uid}.png', 'wb') as f:
+            img.save(f)
         
-        # Call the parent save method to save the ticket
-        super().save(*args, **kwargs)
-        
-        # ถ้าสถานะ checkin เปลี่ยนให้ส่งข้อความทาง Line ตามเดิม
-        if self.checkin == True and self.__original_checkin == False:
-            social_user = SocialAccount.objects.get(user=self.profile.user)
-            flex_message = FlexSendMessage(
-                alt_text='Checkin',
-                contents={
-                        "type": "bubble",
-                        "body": {
-                            "type": "box",
-                            "layout": "vertical",
-                            "spacing": "md",
-                            "contents": [
-                            {
-                                "type": "text",
-                                "text": f"{ self.activity.title }",
-                                "wrap": True,
-                                "weight": "bold",
-                                "gravity": "center",
-                                "size": "xl"
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "margin": "lg",
-                                "spacing": "sm",
-                                "contents": [
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "ชื่อ",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": f"{ self.first_name } { self.last_name }",
-                                        "wrap": True,
-                                        "color": "#666666",
-                                        "size": "sm",
-                                        "flex": 4
-                                    }
-                                    ]
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "เวลา",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": f"{ self.date_updated.strftime('%d/%m/%Y %H:%M') }",
-                                        "wrap": True,
-                                        "size": "sm",
-                                        "color": "#666666",
-                                        "flex": 4
-                                    }
-                                    ]
-                                },
-                                {
-                                    "type": "box",
-                                    "layout": "baseline",
-                                    "spacing": "sm",
-                                    "contents": [
-                                    {
-                                        "type": "text",
-                                        "text": "สถานะ",
-                                        "color": "#aaaaaa",
-                                        "size": "sm",
-                                        "flex": 1
-                                    },
-                                    {
-                                        "type": "text",
-                                        "text": "เช็คอินแล้ว",
-                                        "wrap": True,
-                                        "color": "#17c950",
-                                        "size": "sm",
-                                        "flex": 4
-                                    }
-                                    ]
-                                }
-                                ]
-                            },
-                            {
-                                "type": "box",
-                                "layout": "vertical",
-                                "margin": "xxl",
-                                "contents": [
-                                {
-                                    "type": "image",
-                                    "url": f"{settings.domain_media}/{self.qrcode}",
-                                    "aspectMode": "cover",
-                                    "size": "4xl",
-                                    "margin": "md"
-                                },
-                                {
-                                    "type": "text",
-                                    "text": "You can enter the theater by using this code instead of a ticket",
-                                    "color": "#aaaaaa",
-                                    "wrap": True,
-                                    "margin": "xxl",
-                                    "size": "xs"
-                                }
-                                ]
-                            }
-                            ]
-                        }
-                        })
-            line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
-        super().save(*args, **kwargs)
-    
+        self.qrcode = f'ticket-qrcode/{self.uid}.png'  
+        super().save(*args, **kwargs)  # Ensure the base save method is called
+
     def get_absolute_url(self):
         return reverse('ticket-detail', kwargs={'pk': self.pk})
     

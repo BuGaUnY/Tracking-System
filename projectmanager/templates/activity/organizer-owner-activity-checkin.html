@@ -1,42 +1,38 @@
 {% extends 'base.html' %}
 
-{% block title %}
-    <title>Check in | {{ activity.title }}</title>
-{% endblock %}
+
+{% block title %}<title>Check in | {{activity}} </title>{% endblock %}
+
 
 {% block content %}
-<div class="container d-flex justify-content-center align-items-center" style="min-height: 100vh;">
-    <div class="card mb-2" style="width: 100%;">
-        <div class="card-body">
-            <h5 class="card-title">{{ activity.title }}</h5>
-            <div class="d-grid gap-2">
-                <a href="{{ activity.get_absolute_organizer_owner_activity_ticket_list_url }}" class="btn btn-success">
-                    <i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม
-                </a>
-            </div>
+<div class="card mb-2">
+    <div class="card-body">
+        <h5 class="card-title">{{activity.title}}</h5>
+        <div class="d-grid gap-2">
+            <a href="{{activity.get_absolute_organizer_owner_activity_ticket_list_url}}" class="btn btn-success">
+                <i class="fa-solid fa-people-roof"></i> รายชื่อผู้เข้าร่วม</a>
         </div>
     </div>
-
-    <div class="card mb-2" style="width: 100%;">
-        <div class="card-body">
-            <p class="card-text">Check in QR Code สำหรับผู้เข้าร่วมกิจกรรม</p>
-            <div class="d-grid gap-2">
-                <button type="button" class="btn btn-warning" onclick="startScanner()">
-                    <i class="fa-solid fa-qrcode"></i> Scan QR Code
-                </button>
-            </div>
-        </div>
-        <div class="d-flex justify-content-center align-items-center">
-            <video id="qr-reader" style="width: 300px; height: 300px;"></video>
-        </div>
-    </div>
-
-    <form id="check-in" method="post" class="d-none"> <!-- ซ่อนฟอร์ม -->
-        {% csrf_token %}
-        <input type="hidden" name="activity_uid" value="{{ activity.uid }}">
-        <input type="hidden" id="scanCode" name="ticket_uid">
-    </form>
 </div>
+
+<div class="card">
+    <div class="card-body">
+        <h5 class="card-title">{{activity.title}}</h5>
+        <p class="card-text">Check in QR Code สำหรับผู้เข้างาน</p>
+        <div class="d-grid gap-2">
+            <button type="button" class="btn btn-warning" onclick="startScanner()">
+                <i class="fa-solid fa-qrcode"></i> Scan QR Code</button>
+        </div>
+    </div>
+</div>
+
+<div id="check-in-partials"></div>
+
+<form id="check-in" hx-get="{% url 'ticket-checkin' %}" hx-target="#check-in-partials">
+    <input type="text" name="activity_uid" value="{{activity.uid}}" style="visibility:hidden">
+    <input type="text" id="scanCode" name="ticket_uid" style="visibility:hidden">
+    <button type="submit" id="clickButton" style="visibility:hidden">submit</button>
+</form>
 
 <!-- SweetAlert2 -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -44,71 +40,44 @@
 <!-- ZXing (QR Code Reader) -->
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
+<!-- Video element for QR code scanner -->
+<video id="qr-reader" style="width:100%;"></video>
+
 <script>
 function startScanner() {
     const codeReader = new ZXing.BrowserQRCodeReader();
     console.log('Starting the QR code reader...');
+
+    // Ensure the video element is present in the DOM
+    const videoElement = document.getElementById('qr-reader');
+    
+    if (!videoElement) {
+        console.error("QR reader video element not found.");
+        Swal.fire({
+            position: 'center',
+            icon: 'error',
+            title: 'ไม่พบวิดีโอสำหรับ QR Code',
+            showConfirmButton: true
+        });
+        return;
+    }
 
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
     codeReader.decodeOnceFromVideoDevice(null, 'qr-reader')
         .then((result) => {
             console.log('QR Code scanned:', result.text);
-            if (uuidPattern.test(result.text)) { // ตรวจสอบว่าเป็น UUID ที่ถูกต้อง
+
+            if (uuidPattern.test(result.text)) {
+                // สร้าง URL พร้อม ticket_uid และ activity_uid
                 document.getElementById("scanCode").value = result.text;
-
-                // ส่งข้อมูล POST ไปยังเซิร์ฟเวอร์
-                const formData = new FormData(document.getElementById("check-in"));
-                formData.set("ticket_uid", result.text); // เพิ่ม ticket_uid ที่สแกนได้
-
-                fetch("{% url 'ticket-checkin' %}", {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}' // csrf token
-                    }
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        Swal.fire({
-                            position: 'center',
-                            icon: 'success',
-                            title: 'ตรวจสอบตั๋วสำเร็จ',
-                            text: 'ตั๋ว UID: ' + data.ticket_uid,
-                            showConfirmButton: true
-                        });
-                    } else {
-                        Swal.fire({
-                            position: 'center',
-                            icon: 'error',
-                            title: 'ตรวจสอบตั๋วไม่สำเร็จ',
-                            text: data.error,
-                            showConfirmButton: true
-                        });
-                    }
-                })
-                .catch(err => {
-                    console.error("Error sending ticket data:", err);
-                    Swal.fire({
-                        position: 'center',
-                        icon: 'error',
-                        title: 'มีข้อผิดพลาดในการส่งข้อมูล',
-                        text: err.message,
-                        showConfirmButton: true
-                    });
-                });
+                document.getElementById("clickButton").click();
             } else {
                 Swal.fire({
                     position: 'center',
                     icon: 'error',
                     title: 'ข้อมูลที่สแกนไม่ถูกต้อง',
-                    text: 'กรุณาสแกน QR Code ที่ถูกต้อง',
+                    text: 'ข้อมูล QR ไม่ตรงกับรูปแบบ UUID ที่คาดหวัง',
                     showConfirmButton: true
                 });
             }
@@ -125,15 +94,4 @@ function startScanner() {
         });
 }
 </script>
-
-<style>
-    .container {
-        display: flex;
-        flex-direction: column; /* จัดแนวคาร์ดเป็นแนวตั้ง */
-    }
-
-    .card {
-        margin: 10px; /* เพิ่มพื้นที่ว่างระหว่างคาร์ด */
-    }
-</style>
-{% endblock %}
+{% endblock %}  

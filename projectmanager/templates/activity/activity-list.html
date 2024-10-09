@@ -22,6 +22,7 @@
                 <p class="card-text border p-2 bg-light rounded">{{activity.description}}</p>
                 <p class="text-muted">เริ่ม : {{activity.date_start|date_th}}</p>
                 <p class="text-muted">เวลา : {{activity.date_start|localtime|time_th}} น.</p>
+                <p class="text-muted">จำนวนหน่วยกิจ : {{activity.activity_category}}</p>
                 <a href="{{activity.get_absolute_url}}" class="btn btn-secondary"><i class="fa-regular fa-pen-to-square"></i> เพิ่มเติม</a>
                 <a href="{% url 'ticket-create' activity.id %}" class="btn btn-primary"><i class="fa-solid fa-right-to-bracket"></i>  ลงทะเบียน</a>
             </div>

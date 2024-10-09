@@ -1,43 +1,70 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block title %}<title>รายงานความก้าวหน้า | {{ user_profile.first_name }} {{ user_profile.last_name }}</title>{% endblock %}
 {% block content %}
 <div class="container">
-    <h1>รายงานการเช็คชื่อของ {{ user_profile.first_name }} {{ user_profile.last_name }}</h1>
+    <h1>รายงานสถานะกิจกรรม</h1>
+    
     <div class="card-body bg-body-tertiary p-4 rounded">
         <div class="border p-3 bg-body-secondary mt-3 mb-3 rounded">
-                <p class="text-muted mb-1">รหัสนักเรียน-นักศึกษา : {{user_profile.student_number}}</p>
-                <p class="text-muted mb-1">ระดับชั้น : {{user_profile.degree}}</p>
-                <p class="text-muted mb-1">ห้อง : {{user_profile.room}}</p>
-                <p class="text-muted mb-1">แผนก : {{user_profile.department}}</p>
+            <h5 class="mb-3">{{ user_profile.first_name }} {{ user_profile.last_name }}</h5>
+            <p class="text-muted mb-1">รหัสนักเรียน-นักศึกษา : {{ user_profile.student_number }}</p>
+            <p class="text-muted mb-1">ระดับชั้น : {{ user_profile.degree }}</p>
+            <p class="text-muted mb-1">ห้อง : {{ user_profile.room }}</p>
+            <p class="text-muted ">แผนก : {{ user_profile.department }}</p>
         </div>
 
+        <table class="table table-bordered mt-2">
+            <thead>
+                <tr>
+                    <th>กิจกรรม</th>
+                    <th>เข้า</th>
+                    <th>ขาด</th>
+                    <th>เปอร์เซ็นต์</th>
+                    <th>สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in attendance_summary %}
+                <tr>
+                    <td>{{ activity.activity }}</td>
+                    <td>{{ activity.present }}</td>
+                    <td>{{ activity.absent }}</td>
+                    <td>{{ activity.attendance_percentage|floatformat:1 }}%</td>
+                    <td>{{ activity.status }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">ยังไม่มีข้อมูลการเช็คชื่อ</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
 
-    <table class="p-4 rounded">
-        <thead>
-            <tr>
-                <th>กิจกรรม</th>
-                <th>เข้า</th>
-                <th>ขาด</th>
-                <th>เปอร์เซ็นต์</th>
-                <th>สถานะ</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for activity in attendance_summary %}
-            <tr>
-                <td>{{ activity.activity }}</td>
-                <td>{{ activity.present }}</td>
-                <td>{{ activity.absent }}</td>
-                <td>{{ activity.attendance_percentage|floatformat:1 }}%</td>
-                <td>{{ activity.status }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5">ยังไม่มีข้อมูลการเช็คชื่อ</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <table class="table table-bordered mt-2">
+            <thead>
+                <tr>
+                    <th>ชื่อกิจกรรมพิเศษ</th>
+                    <th>สถานะ</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for activity in ticket_summary %}
+                <tr>
+                    <td>{{ activity.activity }}</td>
+                    <td>{{ activity.status }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="2">ยังไม่มีข้อมูลการเช็คตั๋ว</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="summary mt-2">
+            <p class="mb-1">จำนวนหน่วยกิจที่เข้าร่วม: {{ total_units }}</p>
+            <p class="mb-1">สถานะการเข้าร่วมกิจกรรมพิเศษ: {{ overall_status }}</p>
+        </div>
     </div>
 </div>
 
@@ -49,17 +76,25 @@
 
     th,
     td {
-        padding: 5px;
+        padding: 8px;
         border: 1px solid #ddd;
+        text-align: center; /* Center align text for better readability */
     }
 
     th {
-        text-align: center;
         background-color: #f0f0f0;
     }
 
-    h1 {
+    h1, h2, h3 {
         text-align: center;
+    }
+
+    .summary {
+        text-align: center; /* Center align summary text */
+        margin-top: 20px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9; /* Light background for summary */
     }
 </style>
 {% endblock %}
