@@ -7,34 +7,16 @@
       <span class="text-responsive">กิจกรรมพิเศษ</span>
     </a>
   </li>
-  <!-- <li>
-    <a href="#" class="nav-link text-dark text-center">
+  <li>
+    <a href="{% url 'self_report' %}" class="nav-link text-dark text-center">
+      <i class="fa-solid fa-chart-simple bi d-block mx-auto mb-1 icon-responsive"></i>
+      <span class="text-responsive">รายงานสถานะกิจกรรม</span>
+    </a>
+  </li>
+  <li>
+    <a href="{% url 'ticket-list' %}" class="nav-link text-dark text-center">
       <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">รายงาน</span>
-    </a>
-  </li> -->
-  <li>
-    <a href="{% url 'students' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-users bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">นักเรียน</span>
-    </a>
-  <li>
-    <a href="{% url 'attendance_list' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-calendar-check bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">เช็คชื่อ</span>
-    </a>
-  </li>
-  </li>
-  <li>
-    <a href="{% url 'report_list' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">รายงาน</span>
-    </a>
-  </li>
-  <li>
-    <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-file-export bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">export</span>
+      <span class="text-responsive">กิจกรรมที่ลงทะเบียน</span>
     </a>
   </li>
 </ul>

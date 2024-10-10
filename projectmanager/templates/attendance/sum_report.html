@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h2>รายงานความก้าวหน้ารวม</h2>
+<h2 class="text-center">Export To Excel</h2>
 
 <!-- Filter Form -->
 <form method="get" class="mb-4">
@@ -28,28 +28,29 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4">
-            <button type="submit" class="btn btn-primary mt-4">ค้นหา</button>
+        <div class="col-md-4 d-flex align-items-end mt-1">
+            <button type="submit" class="btn btn-primary">ค้นหา</button>
         </div>
     </div>
 </form>
 
 {% if room_filter and department_filter %}
-{% for student_number, details in progress_reports.items %}
-<!-- แสดงรายงานการเข้าร่วมกิจกรรมรวม -->
-<table>
-    <thead>
-        <tr>
-            <th>รหัสประจำตัว</th>
-            <th>ชื่อ-สกุล</th>
-            <th>แผนก/ชั้น/กลุ่ม</th>
-            <th>กิจกรรมเข้าแถว</th>
-            <th>กิจกรรมชมรม</th>
-            <th>กิจกรรมโฮมรูม</th>
-            <th>กิจกรรมลูกเสือ</th>
-        </tr>
-    </thead>
-    <tbody>
+    {% if progress_reports %}
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>รหัสประจำตัว</th>
+                <th>ชื่อ-สกุล</th>
+                <th>แผนก/ชั้น/กลุ่ม</th>
+                <th>กิจกรรมเข้าแถว</th>
+                <th>กิจกรรมชมรม</th>
+                <th>กิจกรรมโฮมรูม</th>
+                <th>กิจกรรมพิเศษ</th>
+                <th>กิจกรรมลูกเสือ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student_number, details in progress_reports.items %}
             <tr>
                 <td>{{ student_number }}</td>
                 <td>{{ details.name }}</td>
@@ -57,33 +58,30 @@
                 <td class="text-center">{{ details.activities.line_up|default:"-" }}</td>
                 <td class="text-center">{{ details.activities.club|default:"-" }}</td>
                 <td class="text-center">{{ details.activities.homeroom|default:"-" }}</td>
+                {% if student_number in ticket_summary %}
+                    <td class="text-center">{{ overall_status|default:"-" }}</td>
+                {% else %}
+                    <td class="text-center">-</td>  <!-- ไม่มีสถานะ -->
+                {% endif %}
                 <td class="text-center">{{ details.activities.scout|default:"-" }}</td>
             </tr>
-    </tbody> 
-</table>
-{% empty %}
-    <p>ไม่พบข้อมูล</p>
-{% endfor %}
-
-{% if progress_reports %}
-    <!-- ถ้าพบข้อมูล แสดงทั้งปุ่ม Excel และ กลับ -->
-    <button class="btn btn-success mt-1">
-        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="nav-link text-dark text-center">Excel</a>
-    </button>
-    <button class="btn btn-warning mt-1">
-        <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">กลับ</a>
-    </button>
+        {% endfor %}
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-between mt-3">
+        <a href="{% url 'sum_report' %}" class="btn btn-warning">กลับ</a>
+        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="btn btn-success">ดาวน์โหลด Excel</a>
+    </div>
+    {% else %}
+        <p>ไม่พบข้อมูล</p>
+        <div class="d-flex mt-3">
+            <a href="{% url 'sum_report' %}" class="btn btn-warning">กลับ</a>
+        </div>
+    {% endif %}
 {% else %}
-    <!-- ถ้าไม่พบข้อมูล แสดงเฉพาะปุ่ม กลับ -->
-    <button class="btn btn-warning mt-1">
-        <a href="{% url 'sum_report' %}" class="nav-link text-dark text-center">กลับ</a>
-    </button>
+    <p class="text-center">กรุณาเลือก ห้อง และ แผนก ก่อนแสดงรายงานความก้าวหน้า</p>
 {% endif %}
 
-
-{% else %}
-<p class="text-center">กรุณาเลือก ห้อง และ แผนก ก่อนแสดงรายงาน</p>
-{% endif %}
 <style>
     table {
         border-collapse: collapse;
@@ -100,8 +98,14 @@
         background-color: #f0f0f0;
     }
 
-    h1 {
+    h2 {
         text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .nav-link {
+        text-decoration: none;
+        color: inherit;
     }
 </style>
 {% endblock %}

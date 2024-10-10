@@ -37,48 +37,50 @@
     </div>
 </form>
 
-<!-- Check if filters are applied before showing attendance form -->
 {% if room_filter or department_filter %}
-    <!-- Attendance Check-In Form -->
+    {% if formset.total_form_count > 0 %}
+    <!-- มีข้อมูลที่ผ่านการกรอง -->
     <form method="post">
         {% csrf_token %}
         {{ formset.management_form }}
         <div class="formset-container">
-            {% if formset %}
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>รหัสประจำตัว</th>
-                            <th>ชื่อ-สกุล</th>
-                            <th>ห้อง</th>
-                            <th>ชั้นปี</th>
-                            <th>แผนก</th>
-                            <th>สถานะ</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for form in formset %}
-                        <tr>
-                            <td>{{ form.student_number.value }}{{ form.student_number }}</td>
-                            <td>{{ form.first_name.value }} {{ form.last_name.value }} {{ form.first_name }} {{ form.last_name }}</td>
-                            <td class="text-center">{{ form.room.value }} {{ form.room }}</td>
-                            <td class="text-center">{{ form.degree.value }} {{ form.degree }}</td>
-                            <td>{{ form.department.value }} {{ form.department }}</td>
-                            <td class="text-center">{{ form.presence }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="text-center">ไม่พบรายชื่อนักเรียน</p>
-            {% endif %}
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>รหัสประจำตัว</th>
+                        <th>ชื่อ-สกุล</th>
+                        <th>ห้อง</th>
+                        <th>ชั้นปี</th>
+                        <th>แผนก</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in formset %}
+                    <tr>
+                        <td>{{ form.student_number.value }}{{ form.student_number }}</td>
+                        <td>{{ form.first_name.value }} {{ form.last_name.value }} {{ form.first_name }} {{ form.last_name }}</td>
+                        <td class="text-center">{{ form.room.value }} {{ form.room }}</td>
+                        <td class="text-center">{{ form.degree.value }} {{ form.degree }}</td>
+                        <td>{{ form.department.value }} {{ form.department }}</td>
+                        <td class="text-center">{{ form.presence }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        {% if formset %}
+        <div class="d-flex justify-content-between mt-3">
             <button class="btn btn-success" type="submit">บันทึกการเช็คชื่อ</button>
-        {% endif %}
+            <a href="{% url 'attendance_list' %}" class="btn btn-warning">กลับ</a>
+        </div>
     </form>
+    {% else %}
+    <!-- ไม่มีข้อมูลที่ผ่านการกรอง -->
+    <p class="text-center">ไม่พบรายชื่อนักเรียน</p>
+    <a href="{% url 'attendance_list' %}" class="btn btn-warning">กลับ</a>
+    {% endif %}
 {% else %}
-    <p class="text-center">กรุณาเลือกห้องหรือแผนกเพื่อกรองข้อมูลก่อน</p>
+<p class="text-center">กรุณาเลือกห้องหรือแผนกเพื่อกรองข้อมูลก่อน</p>
 {% endif %}
 
 <style>
@@ -103,4 +105,3 @@
     }
 </style>
 {% endblock %}
-

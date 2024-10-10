@@ -31,7 +31,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-4 mt-1">
             <button type="submit" class="btn btn-primary mt-4">ค้นหา</button>
         </div>
     </div>
@@ -71,7 +71,7 @@
     {% else %}
         <p>ไม่พบข้อมูล</p>
     {% endif %}
-    <button class="btn btn-warning" >
+    <button class="btn btn-warning mt-1" >
         <a href="{% url 'report_list' %}" class="nav-link text-dark text-center">กลับ</a>
     </button>
 {% else %}

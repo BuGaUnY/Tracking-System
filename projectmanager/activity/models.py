@@ -1,20 +1,16 @@
-from django.db import models
 from ckeditor_uploader.fields import RichTextUploadingField
 from allauth.socialaccount.models import SocialAccount
 from django.urls import reverse
 from projectmanager import settings
-from linebot import LineBotApi
 from linebot.models import *
-import uuid, os
-import qrcode
 from linebot.models import FlexSendMessage
 from django.core.validators import MinValueValidator, MaxValueValidator
 from base.models import Profile
 from django.utils import timezone
 from django.core.files.storage import FileSystemStorage
-from django.utils import timezone
-
-line_bot_api = LineBotApi(settings.channel_access_token)
+from django.db import models
+import uuid, os
+import qrcode
 
 # Create your models here.
 ACTIVITY_CATEGORY = (
@@ -93,6 +89,7 @@ class Organizer(models.Model):
 
     def get_absolute_url(self):
         return reverse('organizer-detail', kwargs={'pk': self.pk})
+    
 
     def get_absolute_owner_url(self):
         return reverse('organizer-owner-detail', kwargs={'pk': self.pk})
@@ -126,6 +123,7 @@ class Ticket(models.Model):
     uid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     activity = models.ForeignKey(Activity, on_delete=models.SET_NULL, null=True)
     profile = models.ForeignKey('base.Profile', on_delete=models.SET_NULL, null=True, blank=True, related_name='ticket_profile')
+    student_number = models.CharField(max_length=20, null=True) 
     first_name = models.CharField(max_length=100, null=True)
     last_name = models.CharField(max_length=100, null=True)
     room = models.CharField(max_length=5, null=True)
@@ -139,6 +137,7 @@ class Ticket(models.Model):
     @property
     def activity_category(self):
         return self.activity.activity_category if self.activity else None
+    
     class Meta:
         unique_together = ('activity', 'profile')
 

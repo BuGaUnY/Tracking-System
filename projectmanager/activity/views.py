@@ -2,14 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_date
-from django.db.models import Count, Q
+from django.db.models import Count, Q , Case, When, IntegerField
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from .models import Activity, Organizer , Attendance, AttendanceCheckin, Ticket
 from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from .forms import TicketForm, AttendanceCheckinForm, AttendanceCheckinFormSet, CheckinForm
+from .forms import TicketForm, AttendanceCheckinForm
 from django.urls import reverse
 from django_filters.views import FilterView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
@@ -25,15 +25,8 @@ from openpyxl import Workbook
 from django.views import View
 from django.db import transaction
 
-
 logger = logging.getLogger(__name__)
 
-# try:
-#     line_bot_api.push_message(social_user.extra_data['sub'], flex_message)
-# except Exception as e:
-#     logger.error("Error sending message: %s", e)
-
-# Create your views here.
 
 def is_valid_uuid(value):
     try:
@@ -41,7 +34,16 @@ def is_valid_uuid(value):
         return True
     except ValueError:
         return False
+
+class Teacher(LoginRequiredMixin,ListView):
+    model = Organizer
+    template_name = 'activity/teacher.html'
+    context_object_name = 'teachers'
+    ordering = ['-date_create']
     
+    def get_queryset(self):
+        return Organizer.objects.filter(owner=self.request.user.profile)
+
 class OrganizerList(ListView):
     model = Organizer
     template_name = 'activity/organizer-list.html'
@@ -79,9 +81,6 @@ class OrganizerOwnerDetail(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['activitys'] = Activity.objects.filter(organizer=self.object)
         return context
-
-org_pk = 123
-act_pk = 456
 
 class OrganizerOwnerActivityCheckin(LoginRequiredMixin, TemplateView):
     template_name = 'activity/organizer-owner-activity-checkin.html'
@@ -126,17 +125,7 @@ class OrganizerOwnerActivityTicketList(LoginRequiredMixin, ListView):
         context['activity'] = get_object_or_404(Activity, pk=self.kwargs['pk'], organizer__owner=self.request.user.profile)
         return context
 
-class CustomDateRangeFilter(DateRangeFilter):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.extra['choices'][0] = ('today', 'วันนี้')
-        self.extra['choices'][1] = ('yesterday', 'เมื่อวานนี้')
-        self.extra['choices'][2] = ('week', 'สัปดาห์นี้')
-        self.extra['choices'][3] = ('month', 'เดือนนี้')
-        self.extra['choices'][4] = ('year', 'ปีนี้')
-
 class ActivityFilter(django_filters.FilterSet):
-    date_start = CustomDateRangeFilter()
     class Meta:
         model = Activity
         fields = ['organizer', 'date_start', 'activity_category']
@@ -177,6 +166,7 @@ class TicketCreate(LoginRequiredMixin, SuccessMessageMixin, CreateView):
     def get_initial(self):
         initial = super().get_initial()
         profile = self.request.user.profile
+        initial['student_number'] = profile.student_number
         initial['first_name'] = profile.first_name
         initial['last_name'] = profile.last_name
         initial['room'] = profile.room
@@ -277,24 +267,28 @@ class TicketCheckinSuccessView(View):
             else:
                 return JsonResponse({'success': False, 'message': 'Ticket already checked in.'}, status=400)
 
-
 class AttendanceList(ListView):
     model = Attendance
     template_name = 'attendance/attendance_list.html'
     context_object_name = 'attendances'
 
+
 def bulk_checkin(request, pk):
-    attendance = Attendance.objects.get(pk=pk)
-    room_filter = request.GET.get('room', None)
-    department_filter = request.GET.get('department', None)
+    attendance = get_object_or_404(Attendance, pk=pk)  # ค้นหาบันทึกการเข้าร่วม
+    room_filter = request.GET.get('room')
+    department_filter = request.GET.get('department')
+
+    # เริ่มต้นด้วยการดึงโปรไฟล์ทั้งหมด
     profiles = Profile.objects.all()
 
+    # กรองโปรไฟล์ตามห้องและแผนก
     if room_filter:
         profiles = profiles.filter(room=room_filter)
 
     if department_filter:
         profiles = profiles.filter(department=department_filter)
 
+    # สร้าง FormSet สำหรับการบันทึก AttendanceCheckin
     AttendanceCheckinFormSet = modelformset_factory(
         AttendanceCheckin,
         form=AttendanceCheckinForm,
@@ -335,9 +329,10 @@ def bulk_checkin(request, pk):
                 # บันทึกเฉพาะเมื่อไม่มีข้อมูลซ้ำ
                 instance.save()
 
-            return redirect('report_list')
+            return redirect('report_list')  # เปลี่ยนเส้นทางไปยังหน้ารายงานหลังจากบันทึกข้อมูล
 
     else:
+        # สร้างข้อมูลเริ่มต้นสำหรับฟอร์ม
         initial_data = [
             {
                 'student_number': profile.student_number,
@@ -351,8 +346,22 @@ def bulk_checkin(request, pk):
             for profile in profiles
         ]
 
+        # สร้างฟอร์มเซ็ตด้วยข้อมูลเริ่มต้นและไม่ใช้ queryset
         formset = AttendanceCheckinFormSet(initial=initial_data, queryset=AttendanceCheckin.objects.none())
-        grouped_profiles = profiles.values('room', 'department').distinct()
+
+        # จัดกลุ่มโปรไฟล์ตามห้องและแผนกเพื่อแสดงใน template
+        # ทำให้ห้องไม่ซ้ำกันและเรียงตามลำดับที่ต้องการ (1-9, A-Z)
+        grouped_profiles = profiles.values('room', 'department').distinct().order_by(
+            Case(
+                When(room__regex=r'^[0-9]+$', then=1),  # ห้องที่เป็นตัวเลข
+                When(room__regex=r'^[A-Za-z]+$', then=2),  # ห้องที่เป็นตัวอักษร
+                output_field=IntegerField(),
+            )
+        ).order_by('room')  # เรียงตามชื่อห้อง
+
+        # เช็คว่ามีโปรไฟล์อยู่ใน department filter หรือไม่
+        if department_filter:
+            print(f"Filtering by department: {department_filter}. Remaining profiles: {profiles.count()}")
 
     return render(request, 'attendance/bulk_checkin.html', {
         'formset': formset,
@@ -367,12 +376,13 @@ class ReportList(ListView):
     template_name = 'attendance/report_list.html'
     context_object_name = 'reports'
 
+
 def attendance_report(request, pk):
     # Fetch attendance record using the pk
     attendance = get_object_or_404(Attendance, pk=pk)
     attendances = Attendance.objects.all()
     progress_reports = {}
-    rooms = set()
+    rooms = set()  # Use a set to collect unique rooms
     departments = set()
 
     # Get filters from the request
@@ -381,6 +391,7 @@ def attendance_report(request, pk):
     date_checkin = request.GET.get('date_checkin', '').strip()
 
     if request.method == 'GET':
+        # Validate the date format
         if date_checkin and not parse_date(date_checkin):
             raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
 
@@ -410,12 +421,13 @@ def attendance_report(request, pk):
                     'department': record.department,
                 }
 
+            # Increment present or absent count
             if presence_status == "Present":
                 attendance_count[student_number]['present'] += 1
             else:
                 attendance_count[student_number]['absent'] += 1
 
-            # Collect rooms and departments for filtering
+            # Collect unique rooms and departments for filtering
             rooms.add(record.room)
             departments.add(record.department)
 
@@ -423,7 +435,7 @@ def attendance_report(request, pk):
         for student_number, data in attendance_count.items():
             total_attendance = data['present'] + data['absent']
             attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
-            status = "ผ่าน" if attendance_percentage >= 80 else "ไม่ผ่าน"
+            status = "ผ่าน" if attendance_percentage >= 60 else "ไม่ผ่าน"
 
             if data['att_name'] not in progress_reports:
                 progress_reports[data['att_name']] = []
@@ -439,16 +451,21 @@ def attendance_report(request, pk):
                 'status': status,
             })
 
+    # Remove duplicates and sort rooms and departments
+    sorted_rooms = sorted(rooms, key=lambda x: (x.isdigit(), x))  # Unique rooms sorted
+    sorted_departments = sorted(set(departments))  # Unique departments sorted
+
     context = {
         'attendances': attendances,
         'progress_reports': progress_reports,
-        'rooms': sorted(rooms),  # sorted to display rooms in order
-        'departments': sorted(departments),  # sorted to display departments in order
+        'rooms': sorted(set(sorted_rooms)),  # Ensure uniqueness before sorting
+        'departments': sorted_departments,
         'room_filter': room_filter,
         'department_filter': department_filter,
         'date_checkin': date_checkin,
     }
     return render(request, 'attendance/attendance_report.html', context)
+
 
 ACTIVITY_MAP = {
     'กิจกรรมเข้าแถว': 'line_up',
@@ -457,41 +474,47 @@ ACTIVITY_MAP = {
     'กิจกรรมลูกเสือ': 'scout'
 }
 
+
+@login_required
 def sum_report(request):
-    # ดึงข้อมูลการเข้าร่วมทั้งหมด
+    # Get the user's profile to access the student_number
+    user_profile = get_object_or_404(Profile, user=request.user)
+    student_number = user_profile.student_number  # Get the student number from the user's profile
+    ticket_records = Ticket.objects.filter(student_number=student_number)  # Fetch tickets for the user
+
+    # ดึงบันทึกการเข้าร่วมทั้งหมด
     attendances = Attendance.objects.all()
     progress_reports = {}
-    rooms = set()
-    departments = set()
+    rooms = set()  # เซ็ตสำหรับเก็บห้อง
+    departments = set()  # เซ็ตสำหรับเก็บแผนก
 
-    # รับค่ากรองจาก request
+    # รับค่าตัวกรองจากคำขอ
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
     date_checkin = request.GET.get('date_checkin', '').strip()
 
     if request.method == 'GET':
+        # ตรวจสอบความถูกต้องของรูปแบบวันที่
         if date_checkin and not parse_date(date_checkin):
             raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
 
-        # วนลูปเพื่อดึงข้อมูลการเข้าร่วมแต่ละกิจกรรม
+        # วนลูปผ่านบันทึกการเข้าร่วม
         for attendance in attendances:
             attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
 
-            # กรองวันที่ถ้ามี
+            # ใช้ตัวกรองถ้ามี
             if date_checkin:
                 attendance_data = attendance_data.filter(date_checkin=date_checkin)
-
-            # กรองห้องและแผนกถ้ามี
             if room_filter:
                 attendance_data = attendance_data.filter(room=room_filter)
             if department_filter:
                 attendance_data = attendance_data.filter(department=department_filter)
 
-            # เก็บข้อมูลนักเรียนแต่ละคนและสถานะกิจกรรม
+            # ประมวลผลบันทึกการเข้าร่วม
             for record in attendance_data:
                 student_number = record.student_number
 
-                # ถ้ายังไม่มีข้อมูลนักเรียนใน progress_reports ให้เพิ่ม
+                # เพิ่มนักเรียนไปยัง progress_reports หากยังไม่เคยมีมาก่อน
                 if student_number not in progress_reports:
                     progress_reports[student_number] = {
                         'name': f"{record.first_name} {record.last_name}",
@@ -502,25 +525,86 @@ def sum_report(request):
                             'club': '-',
                             'homeroom': '-',
                             'scout': '-',
-                        }
+                        },
+                        'unit_count': 0,  # เริ่มต้นนับหน่วยกิจกรรมสำหรับนักเรียน
+                        'status': '-'  # สถานะเริ่มต้นเป็น 'ไม่ผ่าน'
                     }
 
-                # อัปเดตสถานะกิจกรรมใน activities ของนักเรียน
+                # อัปเดตสถานะการเข้าร่วมสำหรับกิจกรรม
                 presence_status = "ผ่าน" if record.presence else "ไม่ผ่าน"
                 progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
 
-                # รวบรวมห้องและแผนกสำหรับการกรอง
+                # เก็บห้องและแผนกสำหรับการกรอง
                 rooms.add(record.room)
                 departments.add(record.department)
 
+    # สรุปข้อมูลตั๋ว
+    ticket_summary = {}
+    total_units = 0  # หน่วยรวมที่นับได้จากการเข้าร่วมกิจกรรมตั๋ว
+
+    # รวมข้อมูลการเช็คอินตั๋ว
+    for ticket in ticket_records:
+        activity = ticket.activity
+        if activity not in ticket_summary:
+            ticket_summary[activity] = {
+                'total_tickets': 0,
+                'checked_in': 0,
+            }
+
+        ticket_summary[activity]['total_tickets'] += 1
+        if ticket.checkin:
+            ticket_summary[activity]['checked_in'] += 1
+            
+            # เพิ่มหน่วยรวมตามหมวดหมู่กิจกรรม
+            if ticket.activity.activity_category == '2 หน่วยกิจ':
+                total_units += 2  # 2 หน่วยสำหรับกิจกรรมใหญ่
+            elif ticket.activity.activity_category == '1 หน่วยกิจ':
+                total_units += 1  # 1 หน่วยสำหรับกิจกรรมเล็ก
+
+    # คำนวณสถานะการเช็คอินตั๋ว
+    for activity, data in ticket_summary.items():
+        total_tickets = data['total_tickets']
+        checked_in_count = data['checked_in']
+        
+        # ตรวจสอบว่าผู้ใช้ได้เช็คอินตั๋วทั้งหมดหรือไม่
+        if total_tickets > 0 and checked_in_count == total_tickets:
+            status = "✅ยืนยันแล้ว"  # เช็คอินตั๋วทั้งหมดแล้ว
+        else:
+            status = "❌ยังไม่ยืนยัน"  # ยังไม่เช็คอินตั๋วทั้งหมด
+            
+        data.update({
+            'checked_in_percentage': (checked_in_count / total_tickets * 100) if total_tickets > 0 else 0,
+            'status': status,
+            'activity': activity,
+        })
+
+    # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
+    overall_status = "-"  # สถานะเริ่มต้น
+    if total_units >= 6:
+        overall_status = "ผ่าน"
+    else:  # ผู้ใช้เข้าร่วมกิจกรรมเพียงพอ
+        overall_status = "ไม่ผ่าน"
+    ticket_summary[student_number] = overall_status
+
+    # เพิ่มข้อมูลรวมลงใน context
+    valid_progress_reports = {
+        student_number: report
+        for student_number, report in progress_reports.items()
+        if student_number is not None  # ตรวจสอบว่า key ไม่เป็น None
+    }
+    
     context = {
-        'progress_reports': progress_reports,
+        'progress_reports': dict(sorted(valid_progress_reports.items(), key=lambda item: (int(item[0]) if item[0].isdigit() else float('inf'), item[0]))),  # จัดเรียง student_number
         'rooms': sorted(rooms),
         'departments': sorted(departments),
         'room_filter': room_filter,
         'department_filter': department_filter,
         'date_checkin': date_checkin,
+        'ticket_summary': ticket_summary,
+        'total_units': total_units,  # ส่งหน่วยรวมสำหรับการแสดงผล
+        'overall_status': overall_status,  # ส่งสถานะโดยรวม
     }
+
     return render(request, 'attendance/sum_report.html', context)
 
 
@@ -597,21 +681,22 @@ def export_to_excel(request):
 
     return response
 
+
 @login_required
 def self_report(request):
-    # Get the currently logged-in user's profile
+    # ดึงข้อมูลผู้ใช้
     user_profile = get_object_or_404(Profile, user=request.user)
     
-    # Fetch attendance records for the user's profile
+    # ดึงบันทึกการเข้าร่วมสำหรับโปรไฟล์ของผู้ใช้
     attendance_records = AttendanceCheckin.objects.filter(student_number=user_profile.student_number)
 
-    # Fetch ticket records for the user's profile
+    # ดึงบันทึกตั๋วสำหรับโปรไฟล์ของผู้ใช้
     ticket_records = Ticket.objects.filter(profile=user_profile)
 
-    # Dictionary to hold attendance summary per activity
+    # พจนานุกรมสำหรับสรุปการเข้าร่วมตามกิจกรรม
     attendance_summary = {}
     
-    # Aggregate attendance data for each activity
+    # รวมข้อมูลการเข้าร่วมสำหรับแต่ละกิจกรรม
     for record in attendance_records:
         if record.att_name not in attendance_summary:
             attendance_summary[record.att_name] = {
@@ -619,27 +704,27 @@ def self_report(request):
                 'absent': 0,
             }
 
-        if record.presence:  # Assuming presence is a boolean field
+        if record.presence:  # สมมติว่า presence เป็นฟิลด์บูลีน
             attendance_summary[record.att_name]['present'] += 1
         else:
             attendance_summary[record.att_name]['absent'] += 1
 
-    # Calculate percentage and status for each activity
+    # คำนวณเปอร์เซ็นต์และสถานะสำหรับแต่ละกิจกรรม
     for activity, data in attendance_summary.items():
         total = data['present'] + data['absent']
         attendance_percentage = (data['present'] / total * 100) if total > 0 else 0
-        status = "ผ่าน" if attendance_percentage >= 80 else "ไม่ผ่าน"
+        status = "ผ่าน" if attendance_percentage >= 60 else "ไม่ผ่าน"
         data.update({
             'attendance_percentage': attendance_percentage,
             'status': status,
             'activity': activity,
         })
 
-    # Ticket summary
+    # สรุปข้อมูลตั๋ว
     ticket_summary = {}
-    total_units = 0  # Total units counted for ticket participation
+    total_units = 0  # หน่วยรวมที่นับได้จากการเข้าร่วมกิจกรรมตั๋ว
 
-    # Aggregate ticket check-in data
+    # รวมข้อมูลการเช็คอินตั๋ว
     for ticket in ticket_records:
         if ticket.activity not in ticket_summary:
             ticket_summary[ticket.activity] = {
@@ -650,22 +735,22 @@ def self_report(request):
         ticket_summary[ticket.activity]['total_tickets'] += 1
         if ticket.checkin:
             ticket_summary[ticket.activity]['checked_in'] += 1
-            # Increment total_units based on activity category
+            # เพิ่มหน่วยรวมตามหมวดหมู่กิจกรรม
             if ticket.activity.activity_category == '2 หน่วยกิจ':
-                total_units += 2  # 2 units for large activity
+                total_units += 2  # 2 หน่วยสำหรับกิจกรรมใหญ่
             elif ticket.activity.activity_category == '1 หน่วยกิจ':
-                total_units += 1  # 1 unit for small activity
+                total_units += 1  # 1 หน่วยสำหรับกิจกรรมเล็ก
 
-    # Calculate ticket check-in status
+    # คำนวณสถานะการเช็คอินตั๋ว
     for activity, data in ticket_summary.items():
         total_tickets = data['total_tickets']
         checked_in_count = data['checked_in']
         
-        # Check if the user has checked in to all tickets
+        # ตรวจสอบว่าผู้ใช้ได้เช็คอินตั๋วทั้งหมดหรือไม่
         if total_tickets > 0 and checked_in_count == total_tickets:
-            status = "✅ยืนยันแล้ว"  # All tickets checked in
+            status = "✅ยืนยันแล้ว"  # เช็คอินตั๋วทั้งหมดแล้ว
         else:
-            status = "❌ยังไม่ยืนยัน"  # Not all tickets checked in
+            status = "❌ยังไม่ยืนยัน"  # ยังไม่เช็คอินตั๋วทั้งหมด
             
         data.update({
             'checked_in_percentage': (checked_in_count / total_tickets * 100) if total_tickets > 0 else 0,
@@ -673,56 +758,22 @@ def self_report(request):
             'activity': activity,
         })
 
-    # Determine overall status based on total units
-    overall_status = "ไม่ผ่าน"  # Default status
+    # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
+    overall_status = "ไม่ผ่าน"  # สถานะเริ่มต้น
     if total_units >= 6:
-        overall_status = "ผ่าน"  # User has participated in enough activities
+        overall_status = "ผ่าน"  # ผู้ใช้เข้าร่วมกิจกรรมเพียงพอ
 
     return render(request, 'attendance/self_report.html', {
-        'attendance_summary': attendance_summary.values(),  # Pass the summary as a list
-        'ticket_summary': ticket_summary.values(),  # Pass ticket summary as a list
+        'attendance_summary': attendance_summary.values(),  # ส่งสรุปเป็นรายการ
+        'ticket_summary': ticket_summary.values(),  # ส่งสรุปตั๋วเป็นรายการ
         'user_profile': user_profile,
-        'total_units': total_units,  # Pass the total units for display
-        'overall_status': overall_status,  # Pass overall status
-    }) 
+        'total_units': total_units,  # ส่งหน่วยรวมสำหรับการแสดงผล
+        'overall_status': overall_status,  # ส่งสถานะโดยรวม
+    })
 
-class AttendanceFilter(FilterSet):
-    class Meta:
-        model = Profile
-        fields = ['room', 'degree', 'department']
 
-        labels = {
-            'room': '',
-            'degree': '',
-            'department': '',
-        }
 
-def attendancesearch(request):
-    filter = AttendanceFilter(request.GET, queryset=AttendanceCheckin.objects.all())
-    context = {'filter': filter}
-    return render(request, 'attendance/attendance_search.html', context)
 
-def attendance_checkin(request):
-    if request.method == 'POST':
-        form = CheckinForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('attendance/attendance_report')  # Redirect to a success page or another view
-    else:
-        form = CheckinForm()
-
-    def get_initial(self):
-        initial = super().get_initial()
-        profile = self.request.user.profile
-        initial['student_number'] = profile.student_number
-        initial['first_name'] = profile.first_name
-        initial['last_name'] = profile.last_name
-        initial['room'] = profile.room
-        initial['degree'] = profile.degree
-        initial['department'] = profile.department
-        return initial
-    
-    return render(request, 'attendance/attendance.html', {'form': form})
 
 
 

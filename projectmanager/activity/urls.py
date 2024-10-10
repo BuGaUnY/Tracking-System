@@ -3,6 +3,7 @@ from . import views
 from django.shortcuts import redirect
 
 urlpatterns = [
+    path('teacher/', views.Teacher.as_view(), name='teacher'),
     path('organizer/', views.OrganizerList.as_view(), name='organizer-list'),
     path('organizer/<int:pk>/', views.OrganizerDetail.as_view(), name='organizer-detail'),
     path('organizer/owner/', views.OrganizerOwnerList.as_view(), name='organizer-owner-list'),
@@ -20,12 +21,10 @@ urlpatterns = [
     path('ticket/checkin/success/', views.TicketCheckinSuccessView.as_view(), name='ticket-checkin-success'),
     path('attendance/', views.AttendanceList.as_view(), name='attendance_list'),
     path('report/', views.ReportList.as_view(), name='report_list'),
-    path('attendance/checkin/', views.attendance_checkin, name='attendance'),
     path('attendance/bulk_checkin/<int:pk>/', views.bulk_checkin, name='bulk_checkin'),
     path('report/<int:pk>/', views.attendance_report, name='attendance_report'),
     path('report/sum_report/', views.sum_report, name='sum_report'),
     path('report/self/', views.self_report, name='self_report'),
-    path('attendance/search/', views.attendancesearch, name='attendance_search'),
     path('report/export/', views.export_to_excel, name='export_to_excel'),
 ]
 
