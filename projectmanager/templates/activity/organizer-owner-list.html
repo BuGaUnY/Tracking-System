@@ -5,7 +5,7 @@
     {% for organizer in organizers %}
     <div class="col-md-4 mb-3">
         <div class="card">
-            <img src="{{organizer.image.url}}" class="card-img-top" alt="{{organizer.name}}">
+            <img src="{{organizer.image.url}}" class="card-img-top" style="height:300px; object-fit:scale-down;" alt="{{organizer.name}}">
             <div class="card-body">
                 <h5 class="card-title">{{organizer.name}}</h5>
                 <p class="card-text border p-2 bg-light rounded">{{organizer.description}}</p>

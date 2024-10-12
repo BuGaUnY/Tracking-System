@@ -4,7 +4,7 @@
 {% load crispy_forms_tags %}
 {% block title %}<title>เช็คชื่อ | {{attendance.att_name}}</title>{% endblock %}
 {% block content %}
-<h1 class="text-center">เช็คชื่อ{{attendance.att_name}}</h1>
+<h1 class="text-center">เช็คชื่อ {{attendance.att_name}}</h1>
 
 <!-- Form for filtering -->
 <form method="get" class="mb-4">
@@ -14,9 +14,11 @@
             <select name="room" id="room" class="form-control">
                 <option value="">กรุณาเลือก</option>
                 {% for profile in grouped_profiles %}
-                <option value="{{ profile.room }}" {% if room_filter == profile.room %}selected{% endif %}>
-                    {{ profile.room }}
-                </option>
+                    {% if profile.room %}  <!-- ตรวจสอบว่า profile.room มีค่าไม่เป็น None หรือว่าง -->
+                    <option value="{{ profile.room }}" {% if room_filter == profile.room %}selected{% endif %}>
+                        {{ profile.room }}
+                    </option>
+                    {% endif %}
                 {% endfor %}
             </select>
         </div>
@@ -25,9 +27,11 @@
             <select name="department" id="department" class="form-control">
                 <option value="">กรุณาเลือก</option>
                 {% for profile in grouped_profiles %}
-                <option value="{{ profile.department }}" {% if department_filter == profile.department %}selected{% endif %}>
-                    {{ profile.department }}
-                </option>
+                    {% if profile.department %}  <!-- ตรวจสอบว่า profile.department มีค่าไม่เป็น None หรือว่าง -->
+                    <option value="{{ profile.department }}" {% if department_filter == profile.department %}selected{% endif %}>
+                        {{ profile.department }}
+                    </option>
+                    {% endif %}
                 {% endfor %}
             </select>
         </div>

@@ -24,23 +24,18 @@ class Profile(models.Model):
     ('ช่างยนต์', 'ช่างยนต์'),
     ('ช่างกลโรงงาน', 'ช่างกลโรงงาน'),
     ('ช่างไฟฟ้ากำลัง', 'ช่างไฟฟ้ากำลัง'),
-    ('ช่างเชื่อมโลหะ/เทคนิคโลหะ ', 'ช่างเชื่อมโลหะ/เทคนิคโลหะ'),
+    ('ช่างเทคนิคพลังงาน', 'ช่างเทคนิคพลังงาน'),
+    ('ช่างเชื่อมโลหะ/ซ่อมบำรุง', 'ช่างเชื่อมโลหะ/ซ่อมบำรุง'),
+    ('ช่างเมคคาทรอนิกส์', 'ช่างเมคคาทรอนิกส์'),
     ('ช่างอิเล็กทรอนิกส์', 'ช่างอิเล็กทรอนิกส์'),
-    ('สถาปัตยกรรม', 'สถาปัตยกรรม'),
+    ('ช่างสถาปัตยกรรม', 'ช่างสถาปัตยกรรม'),
     ('ช่างโยธา', 'ช่างโยธา'),
+    ('ช่างก่อสร้าง', 'ช่างก่อสร้าง'),
+    ('เทคโนโลยีธุรกิจดิจิทัล', 'เทคโนโลยีธุรกิจดิจิทัล'),
     ('เทคโนโลยีสารสนเทศ', 'เทคโนโลยีสารสนเทศ'),
     ('การบัญชี', 'การบัญชี'),
     ('การตลาด', 'การตลาด'),
-    ('คอมพิวเตอร์ธุรกิจ', 'คอมพิวเตอร์ธุรกิจ'),
-    ('การเลขานุการ ', 'การเลขานุการ '),
-    ('การจัดการ', 'การจัดการ'),
     )
-
-    # GENDER_CHOICES = (
-    #     ('นาย', 'นาย'),
-    #     ('นางสาว', 'นางสาว'),
-    #     ('นาง', 'นาง'), 
-    # )
 
     uid = models.UUIDField(default = uuid.uuid4, editable=False, unique=True)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -55,15 +50,14 @@ class Profile(models.Model):
     department = models.CharField(max_length=50, null=True, blank=True, choices=DEPARTMENT_CHOICES)
     phone = models.CharField(max_length=20, null=True, blank=True)
     address = models.TextField(null=True, blank=True)
-    status = models.BooleanField(default=False)
+    status = models.BooleanField(default=True)
     pdpa = models.BooleanField(default=False)
     date_create = models.DateTimeField(auto_now_add=True, blank=False)
     date_updated = models.DateTimeField(auto_now=True, blank=False)
     
 
     def __str__(self):
-        # ตรวจสอบให้แน่ใจว่าคืนค่าเป็นสตริง
-        return f"{self.first_name} {self.last_name}" if self.first_name and self.last_name else "Profile"
+        return f"{self.first_name} {self.last_name} {self.room} {self.department}" if self.first_name and self.last_name else f"{self.first_name}"
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

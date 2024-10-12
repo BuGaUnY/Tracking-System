@@ -272,14 +272,13 @@ class AttendanceList(ListView):
     template_name = 'attendance/attendance_list.html'
     context_object_name = 'attendances'
 
-
 def bulk_checkin(request, pk):
     attendance = get_object_or_404(Attendance, pk=pk)  # ค้นหาบันทึกการเข้าร่วม
     room_filter = request.GET.get('room')
     department_filter = request.GET.get('department')
 
-    # เริ่มต้นด้วยการดึงโปรไฟล์ทั้งหมด
-    profiles = Profile.objects.all()
+    # เริ่มต้นด้วยการดึงโปรไฟล์ทั้งหมด โดยกรองค่า room และ department ที่เป็น None หรือว่าง
+    profiles = Profile.objects.exclude(room__isnull=True, room='').exclude(department__isnull=True, department='')
 
     # กรองโปรไฟล์ตามห้องและแผนก
     if room_filter:
@@ -287,6 +286,9 @@ def bulk_checkin(request, pk):
 
     if department_filter:
         profiles = profiles.filter(department=department_filter)
+
+    # เรียงลำดับโปรไฟล์ตาม room และ department
+    profiles = profiles.order_by('room', 'department')
 
     # สร้าง FormSet สำหรับการบันทึก AttendanceCheckin
     AttendanceCheckinFormSet = modelformset_factory(
@@ -349,24 +351,29 @@ def bulk_checkin(request, pk):
         # สร้างฟอร์มเซ็ตด้วยข้อมูลเริ่มต้นและไม่ใช้ queryset
         formset = AttendanceCheckinFormSet(initial=initial_data, queryset=AttendanceCheckin.objects.none())
 
-        # จัดกลุ่มโปรไฟล์ตามห้องและแผนกเพื่อแสดงใน template
-        # ทำให้ห้องไม่ซ้ำกันและเรียงตามลำดับที่ต้องการ (1-9, A-Z)
-        grouped_profiles = profiles.values('room', 'department').distinct().order_by(
-            Case(
-                When(room__regex=r'^[0-9]+$', then=1),  # ห้องที่เป็นตัวเลข
-                When(room__regex=r'^[A-Za-z]+$', then=2),  # ห้องที่เป็นตัวอักษร
-                output_field=IntegerField(),
-            )
-        ).order_by('room')  # เรียงตามชื่อห้อง
+    # ดึงข้อมูลโปรไฟล์แล้วกรองค่า room และ department ที่ซ้ำกัน
+    rooms_seen = set()
+    departments_seen = set()
+    grouped_results = []
 
-        # เช็คว่ามีโปรไฟล์อยู่ใน department filter หรือไม่
-        if department_filter:
-            print(f"Filtering by department: {department_filter}. Remaining profiles: {profiles.count()}")
+    for profile in profiles:
+        room = profile.room
+        department = profile.department
+
+        # หาก room ยังไม่เคยเจอและไม่เป็น None หรือว่าง ให้แสดงและเพิ่มใน rooms_seen
+        if room and room not in rooms_seen:
+            grouped_results.append({'room': room, 'department': None})
+            rooms_seen.add(room)
+
+        # หาก department ยังไม่เคยเจอและไม่เป็น None หรือว่าง ให้แสดงและเพิ่มใน departments_seen
+        if department and department not in departments_seen:
+            grouped_results.append({'room': None, 'department': department})
+            departments_seen.add(department)
 
     return render(request, 'attendance/bulk_checkin.html', {
         'formset': formset,
         'attendance': attendance,
-        'grouped_profiles': grouped_profiles,
+        'grouped_profiles': grouped_results,  # ส่งผลลัพธ์ที่ไม่ซ้ำกันไปยัง template
         'room_filter': room_filter,
         'department_filter': department_filter
     })
@@ -474,7 +481,6 @@ ACTIVITY_MAP = {
     'กิจกรรมลูกเสือ': 'scout'
 }
 
-
 @login_required
 def sum_report(request):
     # Get the user's profile to access the student_number
@@ -491,25 +497,18 @@ def sum_report(request):
     # รับค่าตัวกรองจากคำขอ
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
-    date_checkin = request.GET.get('date_checkin', '').strip()
 
-    if request.method == 'GET':
-        # ตรวจสอบความถูกต้องของรูปแบบวันที่
-        if date_checkin and not parse_date(date_checkin):
-            raise ValidationError("วันที่ไม่ถูกต้อง กรุณาใช้รูปแบบ YYYY-MM-DD")
+    # วนลูปผ่านบันทึกการเข้าร่วม
+    for attendance in attendances:
+        attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
 
-        # วนลูปผ่านบันทึกการเข้าร่วม
-        for attendance in attendances:
-            attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
+        if room_filter:
+            attendance_data = attendance_data.filter(room=room_filter)
+        if department_filter:
+            attendance_data = attendance_data.filter(department=department_filter)
 
-            # ใช้ตัวกรองถ้ามี
-            if date_checkin:
-                attendance_data = attendance_data.filter(date_checkin=date_checkin)
-            if room_filter:
-                attendance_data = attendance_data.filter(room=room_filter)
-            if department_filter:
-                attendance_data = attendance_data.filter(department=department_filter)
-
+        # ตรวจสอบว่ามีข้อมูลใน attendance_data หรือไม่
+        if attendance_data.exists():
             # ประมวลผลบันทึกการเข้าร่วม
             for record in attendance_data:
                 student_number = record.student_number
@@ -599,7 +598,6 @@ def sum_report(request):
         'departments': sorted(departments),
         'room_filter': room_filter,
         'department_filter': department_filter,
-        'date_checkin': date_checkin,
         'ticket_summary': ticket_summary,
         'total_units': total_units,  # ส่งหน่วยรวมสำหรับการแสดงผล
         'overall_status': overall_status,  # ส่งสถานะโดยรวม
@@ -607,24 +605,18 @@ def sum_report(request):
 
     return render(request, 'attendance/sum_report.html', context)
 
-
 def export_to_excel(request):
     # ดึงข้อมูลการเข้าร่วมทั้งหมด
     attendances = Attendance.objects.all()
     progress_reports = {}
-    
+
     # รับค่ากรองจาก request
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
-    date_checkin = request.GET.get('date_checkin', '').strip()
 
     # วนลูปเพื่อดึงข้อมูลการเข้าร่วมแต่ละกิจกรรม
     for attendance in attendances:
         attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
-
-        # กรองวันที่ถ้ามี
-        if date_checkin:
-            attendance_data = attendance_data.filter(date_checkin=date_checkin)
 
         # กรองห้องและแผนกถ้ามี
         if room_filter:
@@ -647,12 +639,36 @@ def export_to_excel(request):
                         'club': '-',
                         'homeroom': '-',
                         'scout': '-',
-                    }
+                    },
+                    'overall_status': '-',
                 }
 
             # อัปเดตสถานะกิจกรรมใน activities ของนักเรียน
             presence_status = "ผ่าน" if record.presence else "ไม่ผ่าน"
             progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
+
+    # สรุปข้อมูลตั๋วและสถานะโดยรวม
+    for student_number, report in progress_reports.items():
+        ticket_records = Ticket.objects.filter(student_number=student_number)  # Fetch tickets for each student
+        total_units = 0
+
+        if not ticket_records.exists():
+            # ถ้าไม่มีตั๋ว ให้สถานะโดยรวมเป็น "-"
+            progress_reports[student_number]['overall_status'] = "-"
+        else:
+            for ticket in ticket_records:
+                if ticket.checkin:
+                    # เพิ่มหน่วยรวมตามหมวดหมู่กิจกรรม
+                    if ticket.activity.activity_category == '2 หน่วยกิจ':
+                        total_units += 2  # 2 หน่วยสำหรับกิจกรรมใหญ่
+                    elif ticket.activity.activity_category == '1 หน่วยกิจ':
+                        total_units += 1  # 1 หน่วยสำหรับกิจกรรมเล็ก
+
+            # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
+            if total_units >= 6:
+                progress_reports[student_number]['overall_status'] = "ผ่าน"
+            else:
+                progress_reports[student_number]['overall_status'] = "ไม่ผ่าน"
 
     # สร้าง workbook ใหม่
     workbook = Workbook()
@@ -660,10 +676,13 @@ def export_to_excel(request):
     worksheet.title = 'รายงานความก้าวหน้า'
 
     # เขียนหัวตาราง
-    worksheet.append(['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมลูกเสือ'])
+    worksheet.append(['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ'])
+
+    # จัดเรียง student_number จากน้อยไปมาก
+    sorted_progress_reports = sorted(progress_reports.items(), key=lambda item: int(item[0]) if item[0].isdigit() else float('inf'))
 
     # เขียนข้อมูลลงใน worksheet
-    for student_number, details in progress_reports.items():
+    for student_number, details in sorted_progress_reports:
         worksheet.append([
             student_number,
             details['name'],
@@ -671,6 +690,7 @@ def export_to_excel(request):
             details['activities']['line_up'],
             details['activities']['club'],
             details['activities']['homeroom'],
+            details['overall_status'],  # ใช้สถานะโดยรวมจากตั๋ว
             details['activities']['scout'],
         ])
 
@@ -680,7 +700,6 @@ def export_to_excel(request):
     workbook.save(response)
 
     return response
-
 
 @login_required
 def self_report(request):

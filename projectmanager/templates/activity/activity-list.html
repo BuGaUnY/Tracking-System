@@ -7,12 +7,13 @@
 
 
 {% block content %}
+<h1 class="text-center">ประชาสัมพันธ์กิจกรรมพิเศษ</h1>
 <div class="row">
-    <div class="col-12 mb-3">
+    <!-- <div class="col-12 mb-3">
         <div class="d-grid gap-2">
           <a href="{% url 'activity-search' %}" class="btn btn-secondary"><i class="fa-solid fa-magnifying-glass"></i> ค้นหากิจกรรมพิเศษ</a>
         </div>
-      </div>
+      </div> -->
     {% for activity in activitys %}
     <div class="col-md-4 mb-3">
         <div class="card">
