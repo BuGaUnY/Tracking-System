@@ -6,8 +6,12 @@
 
 
 {% block content %}
-<img src="{{organizer.image.url}}" class="card-img-top" style="padding: 10px; height:200px; object-fit:scale-down;" alt="{{organizer.name}}">
 <div class="card">
+  <div class="text-center">
+    <img src="{{organizer.image.url}}" class="rounded-circle img-fluid" 
+    style="padding: 10px; height:250px; object-fit:scale-down;" 
+    alt="{{organizer.name}}">
+  </div>
     <div class="card-body">
         <h5 class="card-title">{{organizer.name}}</h5>
         <p class="card-text border p-2 bg-light rounded">{{organizer.description}}</p>

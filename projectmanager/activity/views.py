@@ -624,7 +624,6 @@ def sum_report(request):
     return render(request, 'attendance/sum_report.html', context)
 
 
-
 def export_to_excel(request):
     # ดึงข้อมูลการเข้าร่วมทั้งหมด
     attendances = Attendance.objects.all()
@@ -664,7 +663,7 @@ def export_to_excel(request):
                 }
 
             # อัปเดตสถานะกิจกรรมใน activities ของนักเรียน
-            presence_status = "ผ่าน" if record.presence else "ไม่ผ่าน"
+            presence_status = "ผ" if record.presence else "มผ"
             progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
 
     # สรุปข้อมูลตั๋วและสถานะโดยรวม
@@ -686,9 +685,9 @@ def export_to_excel(request):
 
             # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
             if total_units >= 6:
-                progress_reports[student_number]['overall_status'] = "ผ่าน"
+                progress_reports[student_number]['overall_status'] = "ผ"
             else:
-                progress_reports[student_number]['overall_status'] = "ไม่ผ่าน"
+                progress_reports[student_number]['overall_status'] = "มผ"
 
     # สร้าง workbook ใหม่
     workbook = Workbook()
