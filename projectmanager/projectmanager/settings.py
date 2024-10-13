@@ -27,7 +27,6 @@ SECRET_KEY = 'django-insecure-+49#s-ax0#@7y8!xh&nc*g5=9+r7&&ks-9c0wwadb=bp!j-1y$
 DEBUG = True
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://dev.entv.events/',
     'https://frame-dev-test.frame-dev.com',
     'https://652f-2403-6200-8831-1d34-51f8-29ed-3d47-4184.ngrok-free.app',
     'https://liff.line.me/',
