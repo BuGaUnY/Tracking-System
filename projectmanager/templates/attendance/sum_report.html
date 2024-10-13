@@ -50,20 +50,16 @@
             </tr>
         </thead>
         <tbody>
-            {% for student_number, details in progress_reports.items %}
+            {% for student_number, report in progress_reports.items %}
             <tr>
                 <td>{{ student_number }}</td>
-                <td>{{ details.name }}</td>
-                <td>{{ details.room }} {{ details.department }}</td>
-                <td class="text-center">{{ details.activities.line_up|default:"-" }}</td>
-                <td class="text-center">{{ details.activities.club|default:"-" }}</td>
-                <td class="text-center">{{ details.activities.homeroom|default:"-" }}</td>
-                {% if student_number in ticket_summary %}
-                    <td class="text-center">{{ overall_status|default:"-" }}</td>
-                {% else %}
-                    <td class="text-center">-</td>  <!-- ไม่มีสถานะ -->
-                {% endif %}
-                <td class="text-center">{{ details.activities.scout|default:"-" }}</td>
+                <td>{{ report.name }}</td>
+                <td>{{ report.room }}{{ report.department }}</td>
+                <td>{{ report.activities.line_up }}</td>
+                <td>{{ report.activities.club }}</td>
+                <td>{{ report.activities.homeroom }}</td>
+                <td>{{ report.overall_status }}</td>
+                <td>{{ report.activities.scout }}</td>
             </tr>
         {% endfor %}
         </tbody>

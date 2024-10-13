@@ -248,20 +248,22 @@ class TicketCheckinSuccessView(View):
     def post(self, request, *args, **kwargs):
         ticket_uid = request.POST.get('ticket_uid')
 
-        # Get the ticket or return a 404 error if it doesn't exist
-        ticket = get_object_or_404(Ticket.objects.select_for_update(), uid=ticket_uid)
-
+        # ใช้ transaction.atomic เพื่อเริ่มต้นธุรกรรม
         with transaction.atomic():
+            # ดึงอ็อบเจ็กต์ตั๋วหรือส่งกลับ 404 ถ้าไม่พบ
+            ticket = get_object_or_404(Ticket.objects.select_for_update(), uid=ticket_uid)
+
             print(f"Before checkin: {ticket.checkin}")
 
+            # ตรวจสอบสถานะการเช็คอิน
             if not ticket.checkin:
-                ticket.checkin = True  # Update check-in status
+                ticket.checkin = True  # อัปเดตสถานะการเช็คอิน
                 ticket.save()
                 print(f"After save: {ticket.checkin}")
 
-                # Refresh the ticket from the database to ensure the value is updated
+                # รีเฟรชอ็อบเจ็กต์ตั๋วจากฐานข้อมูลเพื่อให้แน่ใจว่าค่าได้รับการอัปเดต
                 ticket.refresh_from_db()
-                print(f"Refreshed checkin status after refresh: {ticket.checkin}")  # Check if it's updated correctly
+                print(f"Refreshed checkin status after refresh: {ticket.checkin}")  # ตรวจสอบว่าอัปเดตถูกต้อง
 
                 return render(request, 'activity/partials/ticket-checkin.html', {'ticket': ticket})
             else:
@@ -481,24 +483,49 @@ ACTIVITY_MAP = {
     'กิจกรรมลูกเสือ': 'scout'
 }
 
+
 @login_required
 def sum_report(request):
-    # Get the user's profile to access the student_number
+    # รับโปรไฟล์ของผู้ใช้เพื่อตรวจสอบ student_number
     user_profile = get_object_or_404(Profile, user=request.user)
-    student_number = user_profile.student_number  # Get the student number from the user's profile
-    ticket_records = Ticket.objects.filter(student_number=student_number)  # Fetch tickets for the user
+    student_number = user_profile.student_number  # รับหมายเลขนักเรียนจากโปรไฟล์ของผู้ใช้
 
-    # ดึงบันทึกการเข้าร่วมทั้งหมด
+    # ดึงข้อมูลนักเรียนทั้งหมด
+    all_profiles = Profile.objects.all()  # ดึงโปรไฟล์นักเรียนทั้งหมด
+    ticket_records = Ticket.objects.all()  # ดึงตั๋วสำหรับนักเรียนทั้งหมด
+
+    # ดึงบันทึกการเข้าชั้นเรียนทั้งหมด
     attendances = Attendance.objects.all()
     progress_reports = {}
-    rooms = set()  # เซ็ตสำหรับเก็บห้อง
-    departments = set()  # เซ็ตสำหรับเก็บแผนก
+    rooms = set()  # ชุดสำหรับเก็บห้องเรียน
+    departments = set()  # ชุดสำหรับเก็บแผนก
 
     # รับค่าตัวกรองจากคำขอ
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
 
-    # วนลูปผ่านบันทึกการเข้าร่วม
+    # วนรอบข้อมูลนักเรียนทั้งหมด
+    for profile in all_profiles:
+        student_number = profile.student_number
+
+        # เพิ่มนักเรียนลงใน progress_reports หากยังไม่มี
+        if student_number not in progress_reports:
+            progress_reports[student_number] = {
+                'name': f"{profile.first_name} {profile.last_name}",
+                'room': profile.room,
+                'department': profile.department,
+                'activities': {
+                    'line_up': '-',
+                    'club': '-',
+                    'homeroom': '-',
+                    'scout': '-',
+                },
+                'unit_count': 0,  # เริ่มนับหน่วยกิจกรรมสำหรับนักเรียน
+                'status': '-',  # สถานะเริ่มต้นคือ 'ไม่ผ่าน'
+                'overall_status': '-',  # สถานะโดยรวมเริ่มต้น
+            }
+
+    # วนรอบบันทึกการเข้าชั้นเรียน
     for attendance in attendances:
         attendance_data = AttendanceCheckin.objects.filter(att_name=attendance)
 
@@ -507,103 +534,96 @@ def sum_report(request):
         if department_filter:
             attendance_data = attendance_data.filter(department=department_filter)
 
-        # ตรวจสอบว่ามีข้อมูลใน attendance_data หรือไม่
+        # ตรวจสอบว่ามีข้อมูลการเข้าชั้นเรียนหรือไม่
         if attendance_data.exists():
-            # ประมวลผลบันทึกการเข้าร่วม
+            # ประมวลผลบันทึกการเข้าชั้นเรียน
             for record in attendance_data:
                 student_number = record.student_number
 
-                # เพิ่มนักเรียนไปยัง progress_reports หากยังไม่เคยมีมาก่อน
-                if student_number not in progress_reports:
-                    progress_reports[student_number] = {
-                        'name': f"{record.first_name} {record.last_name}",
-                        'room': record.room,
-                        'department': record.department,
-                        'activities': {
-                            'line_up': '-',
-                            'club': '-',
-                            'homeroom': '-',
-                            'scout': '-',
-                        },
-                        'unit_count': 0,  # เริ่มต้นนับหน่วยกิจกรรมสำหรับนักเรียน
-                        'status': '-'  # สถานะเริ่มต้นเป็น 'ไม่ผ่าน'
-                    }
-
-                # อัปเดตสถานะการเข้าร่วมสำหรับกิจกรรม
+                # อัปเดตสถานะการเข้าชั้นเรียนสำหรับกิจกรรม
                 presence_status = "ผ่าน" if record.presence else "ไม่ผ่าน"
-                progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
+                if student_number in progress_reports:
+                    progress_reports[student_number]['activities'][ACTIVITY_MAP[attendance.att_name]] = presence_status
 
-                # เก็บห้องและแผนกสำหรับการกรอง
+                # เก็บห้องเรียนและแผนกสำหรับการกรอง
                 rooms.add(record.room)
                 departments.add(record.department)
 
     # สรุปข้อมูลตั๋ว
     ticket_summary = {}
-    total_units = 0  # หน่วยรวมที่นับได้จากการเข้าร่วมกิจกรรมตั๋ว
 
-    # รวมข้อมูลการเช็คอินตั๋ว
+    # รวมข้อมูลการเช็คอินตั๋วและคำนวณหน่วยต่อแต่ละนักเรียน
     for ticket in ticket_records:
-        activity = ticket.activity
-        if activity not in ticket_summary:
-            ticket_summary[activity] = {
+        student_number = ticket.student_number  # ดึงหมายเลขนักเรียนจากตั๋ว
+
+        if student_number not in ticket_summary:
+            ticket_summary[student_number] = {
                 'total_tickets': 0,
                 'checked_in': 0,
+                'total_units': 0,  # เริ่มต้น total_units สำหรับนักเรียน
             }
 
-        ticket_summary[activity]['total_tickets'] += 1
+        ticket_summary[student_number]['total_tickets'] += 1
         if ticket.checkin:
-            ticket_summary[activity]['checked_in'] += 1
+            ticket_summary[student_number]['checked_in'] += 1
             
-            # เพิ่มหน่วยรวมตามหมวดหมู่กิจกรรม
+            # เพิ่มจำนวนหน่วยตามหมวดหมู่กิจกรรม
             if ticket.activity.activity_category == '2 หน่วยกิจ':
-                total_units += 2  # 2 หน่วยสำหรับกิจกรรมใหญ่
+                ticket_summary[student_number]['total_units'] += 2  # 2 หน่วยสำหรับกิจกรรมหลัก
             elif ticket.activity.activity_category == '1 หน่วยกิจ':
-                total_units += 1  # 1 หน่วยสำหรับกิจกรรมเล็ก
+                ticket_summary[student_number]['total_units'] += 1  # 1 หน่วยสำหรับกิจกรรมย่อย
 
-    # คำนวณสถานะการเช็คอินตั๋ว
-    for activity, data in ticket_summary.items():
+    # คำนวณสถานะการเช็คอินตั๋วและสถานะโดยรวม
+    for student_number, data in ticket_summary.items():
         total_tickets = data['total_tickets']
         checked_in_count = data['checked_in']
-        
-        # ตรวจสอบว่าผู้ใช้ได้เช็คอินตั๋วทั้งหมดหรือไม่
+        total_units = data['total_units']  # รับ total_units สำหรับนักเรียนนี้
+
+        # ตรวจสอบว่านักเรียนได้เช็คอินตั๋วทั้งหมดหรือไม่
         if total_tickets > 0 and checked_in_count == total_tickets:
-            status = "✅ยืนยันแล้ว"  # เช็คอินตั๋วทั้งหมดแล้ว
+            status = "✅ยืนยันแล้ว"  # เช็คอินตั๋วทั้งหมด
         else:
             status = "❌ยังไม่ยืนยัน"  # ยังไม่เช็คอินตั๋วทั้งหมด
             
         data.update({
             'checked_in_percentage': (checked_in_count / total_tickets * 100) if total_tickets > 0 else 0,
             'status': status,
-            'activity': activity,
         })
 
-    # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
-    overall_status = "-"  # สถานะเริ่มต้น
-    if total_units >= 6:
-        overall_status = "ผ่าน"
-    else:  # ผู้ใช้เข้าร่วมกิจกรรมเพียงพอ
-        overall_status = "ไม่ผ่าน"
-    ticket_summary[student_number] = overall_status
+        overall_status = "ไม่ผ่าน"  # สถานะโดยรวมเริ่มต้น
+        if total_units >= 6:
+            overall_status = "ผ่าน"
 
-    # เพิ่มข้อมูลรวมลงใน context
+        # เพิ่มข้อมูลลงใน progress_reports สำหรับนักเรียนนี้
+        if student_number in progress_reports:
+            progress_reports[student_number]['overall_status'] = overall_status  # เพิ่มลงในรายงานของนักเรียนแต่ละคน
+            progress_reports[student_number]['unit_count'] = total_units  # เพิ่มหน่วยรวมสำหรับนักเรียนนี้
+
+    # ตรวจสอบนักเรียนที่ไม่มีตั๋วหรือการเข้าชั้นเรียน
+    for student_number, report in progress_reports.items():
+        if student_number not in ticket_summary:
+            report['overall_status'] = "-"  # กำหนดสถานะไม่ผ่านหากไม่มีข้อมูลตั๋ว
+            report['unit_count'] = 0  # หน่วยกิจกรรมเป็น 0
+
+    # เพิ่มข้อมูลที่รวมแล้วลงในบริบท
     valid_progress_reports = {
         student_number: report
         for student_number, report in progress_reports.items()
-        if student_number is not None  # ตรวจสอบว่า key ไม่เป็น None
+        if student_number is not None  # ตรวจสอบว่าคีย์ไม่เป็น None
     }
     
     context = {
-        'progress_reports': dict(sorted(valid_progress_reports.items(), key=lambda item: (int(item[0]) if item[0].isdigit() else float('inf'), item[0]))),  # จัดเรียง student_number
+        'progress_reports': dict(sorted(valid_progress_reports.items(), key=lambda item: (int(item[0]) if item[0].isdigit() else float('inf'), item[0]))),  # เรียงตาม student_number
         'rooms': sorted(rooms),
         'departments': sorted(departments),
         'room_filter': room_filter,
         'department_filter': department_filter,
         'ticket_summary': ticket_summary,
-        'total_units': total_units,  # ส่งหน่วยรวมสำหรับการแสดงผล
-        'overall_status': overall_status,  # ส่งสถานะโดยรวม
     }
 
     return render(request, 'attendance/sum_report.html', context)
+
+
 
 def export_to_excel(request):
     # ดึงข้อมูลการเข้าร่วมทั้งหมด

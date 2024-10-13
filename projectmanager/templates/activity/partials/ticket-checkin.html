@@ -27,7 +27,7 @@
                     <div class="alert alert-warning" role="alert">
                         ❌ ยังไม่เช็คอิน
                     </div>
-                    <form method="post" hx-post="{% url 'ticket-checkin-success' %}" hx-target="#check-in-partials">
+                    <form method="post" hx-post="{% url 'ticket-checkin-success' %}" hx-target="#check-in-partials" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
                         {% csrf_token %}
                         <input type="hidden" name="ticket_uid" value="{{ ticket.uid }}">
                         <button type="submit" class="btn btn-primary">

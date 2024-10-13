@@ -15,12 +15,10 @@ def createUser(request, user, **kwargs):
     print(f"Created profile for {user.username}")
 
 # @receiver(post_save, sender=User)
-# def create_user_profile(sender, instance, created, **kwargs):
+# def create_profile(sender, instance, created, **kwargs):
 #     if created:
-#         Profile.objects.create(user=instance)
-#         print(f"Created profile for {instance.username} in post_save signal")
+#         Profile.objects.get_or_create(user=instance)
 
-# # Optional: This may not be necessary if profile is already saved on creation
 # @receiver(post_save, sender=User)
 # def save_user_profile(sender, instance, **kwargs):
 #     if hasattr(instance, 'profile'):

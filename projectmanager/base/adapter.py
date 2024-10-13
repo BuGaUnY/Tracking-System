@@ -3,6 +3,11 @@ from allauth.account.adapter import DefaultAccountAdapter
 from django.shortcuts import redirect
 
 class MyAccountAdapter(DefaultAccountAdapter):
+    def pre_social_login(self, request, sociallogin):
+        user = sociallogin.user
+        if user.id and not sociallogin.is_existing:
+            sociallogin.connect(request, user)
+
     def get_login_redirect_url(self, request):
         # print(dir(request))
         # print(request.path)
