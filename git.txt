@@ -1,0 +1,12 @@
+echo "# Tracking-System" >> README.md
+git init
+git add README.md
+git commit -m "20-9-67"
+git branch -M main
+git remote add origin https://github.com/BuGaUnY/Tracking-System.git
+git push -u origin main
+
+git remote add origin https://github.com/BuGaUnY/Tracking-System.git
+git branch -M main
+git push -u origin main
+
