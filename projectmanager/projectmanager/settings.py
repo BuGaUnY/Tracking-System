@@ -28,12 +28,15 @@ DEBUG = True
 
 CSRF_TRUSTED_ORIGINS = [
     'https://frame-dev-test.frame-dev.com',
-    'https://652f-2403-6200-8831-1d34-51f8-29ed-3d47-4184.ngrok-free.app',
-    'https://liff.line.me/',
+    'https://ctc-sats.ngrok.io',
+    'https://liff.line.me',
 ]
 # Application definition
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = [
+    'ctc-sats.ngrok.io', 
+    'localhost', '127.0.0.1', 
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -230,35 +233,12 @@ CKEDITOR_CONFIGS = {
     },
 }
 
-# LINE Messaging API
-channel_access_token = 'f45bC3kWUn7IkGi6HKTqQ+5estYC0uhyz4t+YBSQ3ABJRzoQg9V2FUkQkgFWLzdXld4SK1DQExeC78nf+vzQTal4xSSAORFAk0/64i600YaN1iPTqNTNUrWyTWuOzxFuOt96tAi3Q3CmUZ0WxHm4kwdB04t89/1O/w1cDnyilFU='
-channel_secret = 'deaddb80853cf5a78fb2ae159fddba5b'
-
 domain_media = 'https://frame-dev-test.frame-dev.com/media'
-# domain_media = 'https://dev.entv.events/media'
 domain_liff = 'https://liff.line.me/2006304809-k4W7Wdro'
-domain = 'https://652f-2403-6200-8831-1d34-51f8-29ed-3d47-4184.ngrok-free.app'
+domain = 'https://ctc-sats.ngrok.io'
 
 # MAPBOX
 if os.name == 'nt':
     VIRTUAL_ENV_BASE = os.environ['VIRTUAL_ENV']
     os.environ['PATH'] = os.path.join(VIRTUAL_ENV_BASE, r'.\Lib\site-packages\osgeo') + ';' + os.environ['PATH']
     os.environ['PROJ_LIB'] = os.path.join(VIRTUAL_ENV_BASE, r'.\Lib\site-packages\osgeo\data\proj') + ';' + os.environ['PATH']
-
-# MAPBOX_KEY = 'pk.eyJ1IjoiZnJhbWVmMzE4IiwiYSI6ImNsNXh4NmExczAyODUzZG55anp1eHl3azQifQ.dUtvypHWk8UfMNgJe-aP8A'
-# default_map_attrs = {  
-#     "style": "mapbox://styles/mapbox/outdoors-v11",
-#     "zoom": 13,
-#     "center": [103.64099592061046, 16.04194018075107],
-#     "cursor_style": 'pointer',
-#     "marker_color": "red",
-#     "rotate": False,
-#     "geocoder": True,
-#     "fullscreen_button": True,
-#     "navigation_buttons": True,
-#     "track_location_button": True, 
-#     "readonly": True,
-#     "placeholder": "Pick a location on map below", 
-#     "language": "auto",
-#     "message_404": "undefined address", 
-#  }

@@ -51,7 +51,7 @@ class AttendanceCheckin(models.Model):
         )
 
     def __str__(self):
-        return f'{self.att_name} {self.first_name} {self.last_name} {self.date_checkin}'
+        return f'{self.att_name} {self.first_name} {self.last_name} {self.department} {self.room} {self.date_checkin} '
 
     def save(self, *args, **kwargs):
         if self.user:
@@ -106,6 +106,10 @@ class Activity(models.Model):
     organizer3 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer3')
     organizer4 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer4')
     organizer5 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer5')
+    organizer6 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer6')
+    organizer7 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer7')
+    organizer8 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer8')
+    organizer9 = models.ForeignKey(Organizer, null=True, blank=True, on_delete=models.SET_NULL, related_name='activities_as_organizer9')
     date_start = models.DateTimeField(null=True, blank=True)
     status = models.BooleanField(default=True)
     date_updated = models.DateTimeField(auto_now=True, blank=False)

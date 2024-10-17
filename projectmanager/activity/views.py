@@ -57,7 +57,27 @@ class OrganizerDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['activitys'] = Activity.objects.filter(organizer=self.object)
+        context['activitys'] = Activity.objects.filter(
+            organizer=self.object
+        ) | Activity.objects.filter(
+            organizer1=self.object
+        ) | Activity.objects.filter(
+            organizer2=self.object
+        ) | Activity.objects.filter(
+            organizer3=self.object
+        ) | Activity.objects.filter(
+            organizer4=self.object
+        ) | Activity.objects.filter(
+            organizer5=self.object
+        )| Activity.objects.filter(
+            organizer6=self.object
+        )| Activity.objects.filter(
+            organizer7=self.object
+        )| Activity.objects.filter(
+            organizer8=self.object
+        )| Activity.objects.filter(
+            organizer9=self.object
+        )
         return context
 
 class OrganizerOwnerList(LoginRequiredMixin, ListView):
@@ -79,8 +99,30 @@ class OrganizerOwnerDetail(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['activitys'] = Activity.objects.filter(organizer=self.object)
+        # รวมการกรอง activity จาก organizer, organizer1, และ organizer2
+        context['activitys'] = Activity.objects.filter(
+            organizer=self.object
+        ) | Activity.objects.filter(
+            organizer1=self.object
+        ) | Activity.objects.filter(
+            organizer2=self.object
+        ) | Activity.objects.filter(
+            organizer3=self.object
+        ) | Activity.objects.filter(
+            organizer4=self.object
+        ) | Activity.objects.filter(
+            organizer5=self.object
+        )| Activity.objects.filter(
+            organizer6=self.object
+        )| Activity.objects.filter(
+            organizer7=self.object
+        )| Activity.objects.filter(
+            organizer8=self.object
+        )| Activity.objects.filter(
+            organizer9=self.object
+        )
         return context
+    
 
 class OrganizerOwnerActivityCheckin(LoginRequiredMixin, TemplateView):
     template_name = 'activity/organizer-owner-activity-checkin.html'
@@ -118,11 +160,40 @@ class OrganizerOwnerActivityTicketList(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         activity = get_object_or_404(Activity, pk=self.kwargs['pk'])
-        return Ticket.objects.filter(activity=activity, activity__organizer__owner=self.request.user.profile)
+        user_profile = self.request.user.profile
+
+        # Filter tickets by any of the organizer fields being related to the user's profile
+        return Ticket.objects.filter(
+            Q(activity=activity) & 
+            (Q(activity__organizer__owner=user_profile) |
+             Q(activity__organizer1__owner=user_profile) |
+             Q(activity__organizer2__owner=user_profile) |
+             Q(activity__organizer3__owner=user_profile) |
+             Q(activity__organizer4__owner=user_profile) |
+             Q(activity__organizer5__owner=user_profile) |
+             Q(activity__organizer6__owner=user_profile) |
+             Q(activity__organizer7__owner=user_profile) |
+             Q(activity__organizer8__owner=user_profile) |
+             Q(activity__organizer9__owner=user_profile))
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['activity'] = get_object_or_404(Activity, pk=self.kwargs['pk'], organizer__owner=self.request.user.profile)
+        # Ensure the context has the correct activity where the user is an organizer (or organizer1-9)
+        context['activity'] = get_object_or_404(
+            Activity,
+            Q(organizer__owner=self.request.user.profile) |
+            Q(organizer1__owner=self.request.user.profile) |
+            Q(organizer2__owner=self.request.user.profile) |
+            Q(organizer3__owner=self.request.user.profile) |
+            Q(organizer4__owner=self.request.user.profile) |
+            Q(organizer5__owner=self.request.user.profile) |
+            Q(organizer6__owner=self.request.user.profile) |
+            Q(organizer7__owner=self.request.user.profile) |
+            Q(organizer8__owner=self.request.user.profile) |
+            Q(organizer9__owner=self.request.user.profile),
+            pk=self.kwargs['pk']  # The keyword argument is placed last
+        )
         return context
 
 class ActivityFilter(django_filters.FilterSet):
@@ -289,8 +360,8 @@ def bulk_checkin(request, pk):
     if department_filter:
         profiles = profiles.filter(department=department_filter)
 
-    # เรียงลำดับโปรไฟล์ตาม room และ department
-    profiles = profiles.order_by('room', 'department')
+    # เรียงลำดับโปรไฟล์ตาม student_number จากน้อยไปมาก
+    profiles = profiles.order_by('student_number')
 
     # สร้าง FormSet สำหรับการบันทึก AttendanceCheckin
     AttendanceCheckinFormSet = modelformset_factory(
@@ -372,10 +443,13 @@ def bulk_checkin(request, pk):
             grouped_results.append({'room': None, 'department': department})
             departments_seen.add(department)
 
+    # เรียงลำดับ grouped_results ตาม room และ department
+    grouped_results.sort(key=lambda x: (x['room'] or "", x['department'] or ""))
+
     return render(request, 'attendance/bulk_checkin.html', {
         'formset': formset,
         'attendance': attendance,
-        'grouped_profiles': grouped_results,  # ส่งผลลัพธ์ที่ไม่ซ้ำกันไปยัง template
+        'grouped_profiles': grouped_results,  # ส่งผลลัพธ์ที่เรียงแล้วไปยัง template
         'room_filter': room_filter,
         'department_filter': department_filter
     })
@@ -441,7 +515,8 @@ def attendance_report(request, pk):
             departments.add(record.department)
 
         # Prepare progress report with attendance percentage
-        for student_number, data in attendance_count.items():
+        sorted_attendance_count = dict(sorted(attendance_count.items()))  # Sort by student_number
+        for student_number, data in sorted_attendance_count.items():
             total_attendance = data['present'] + data['absent']
             attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0
             status = "ผ่าน" if attendance_percentage >= 60 else "ไม่ผ่าน"
@@ -463,10 +538,11 @@ def attendance_report(request, pk):
     # Remove duplicates and sort rooms and departments
     sorted_rooms = sorted(rooms, key=lambda x: (x.isdigit(), x))  # Unique rooms sorted
     sorted_departments = sorted(set(departments))  # Unique departments sorted
+    
 
     context = {
         'attendances': attendances,
-        'progress_reports': progress_reports,
+        'progress_reports': dict(sorted(progress_reports.items(), key=lambda item: (int(item[0]) if item[0].isdigit() else float('inf'), item[0]))),
         'rooms': sorted(set(sorted_rooms)),  # Ensure uniqueness before sorting
         'departments': sorted_departments,
         'room_filter': room_filter,
@@ -605,20 +681,24 @@ def sum_report(request):
             report['overall_status'] = "-"  # กำหนดสถานะไม่ผ่านหากไม่มีข้อมูลตั๋ว
             report['unit_count'] = 0  # หน่วยกิจกรรมเป็น 0
 
-    # เพิ่มข้อมูลที่รวมแล้วลงในบริบท
+    # กรองข้อมูลสำหรับการแสดงผลตามห้องและแผนก
     valid_progress_reports = {
         student_number: report
         for student_number, report in progress_reports.items()
-        if student_number is not None  # ตรวจสอบว่าคีย์ไม่เป็น None
+        if student_number is not None and (not room_filter or report['room'] == room_filter) and (not department_filter or report['department'] == department_filter)
     }
-    
+
+    # กรองค่าที่เป็น None ออกจาก rooms และ departments ก่อนเรียงลำดับ
+    rooms = {room for room in rooms if room is not None}
+    departments = {department for department in departments if department is not None}
+
+    # เพิ่มข้อมูลที่รวมแล้วลงในบริบท
     context = {
         'progress_reports': dict(sorted(valid_progress_reports.items(), key=lambda item: (int(item[0]) if item[0].isdigit() else float('inf'), item[0]))),  # เรียงตาม student_number
-        'rooms': sorted(rooms),
-        'departments': sorted(departments),
+        'rooms': sorted(rooms),  # Now, sorted without None values
+        'departments': sorted(departments),  # Now, sorted without None values
         'room_filter': room_filter,
         'department_filter': department_filter,
-        'ticket_summary': ticket_summary,
     }
 
     return render(request, 'attendance/sum_report.html', context)
@@ -693,6 +773,16 @@ def export_to_excel(request):
     workbook = Workbook()
     worksheet = workbook.active
     worksheet.title = 'รายงานความก้าวหน้า'
+
+    # ปรับขนาดความกว้างของคอลัมน์ (A ถึง H)
+    worksheet.column_dimensions['A'].width = 20  # รหัสประจำตัว
+    worksheet.column_dimensions['B'].width = 30  # ชื่อ-สกุล
+    worksheet.column_dimensions['C'].width = 30  # แผนก/ชั้น/กลุ่ม
+    worksheet.column_dimensions['D'].width = 15  # กิจกรรมเข้าแถว
+    worksheet.column_dimensions['E'].width = 15  # กิจกรรมชมรม
+    worksheet.column_dimensions['F'].width = 15  # กิจกรรมโฮมรูมห
+    worksheet.column_dimensions['G'].width = 15  # กิจกรรมพิเศษ
+    worksheet.column_dimensions['H'].width = 15  # กิจกรรมลูกเสือ
 
     # เขียนหัวตาราง
     worksheet.append(['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ'])

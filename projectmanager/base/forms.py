@@ -27,17 +27,13 @@ class ProfileForm(forms.ModelForm):
 
         self.fields['email'].required = True
         self.fields['email'].label = "อีเมล์"
-        
-        self.fields['student_number'].required = True
+
         self.fields['student_number'].label = "รหัสประจำตัว"
 
-        self.fields['degree'].required = True
-        self.fields['degree'].label = "ระดับชั้น"
-        
-        self.fields['room'].required = True
+        self.fields['degree'].label = "ระดับชั้น"      
+
         self.fields['room'].label = "ห้อง"
         
-        self.fields['department'].required = True
         self.fields['department'].label = "แผนก"
         
         self.fields['phone'].required = True

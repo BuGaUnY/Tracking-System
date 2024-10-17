@@ -10,12 +10,12 @@
   <li>
     <a href="{% url 'self_report' %}" class="nav-link text-dark text-center">
       <i class="fa-solid fa-chart-simple bi d-block mx-auto mb-1 icon-responsive"></i>
-      <span class="text-responsive">รายงานสถานะกิจกรรม</span>
+      <span class="text-responsive">สถานะกิจกรรม</span>
     </a>
   </li>
   <li>
     <a href="{% url 'ticket-list' %}" class="nav-link text-dark text-center">
-      <i class="fa-solid fa-file-pdf bi d-block mx-auto mb-1 icon-responsive"></i>
+      <i class="fa-solid fa-ticket bi d-block mx-auto mb-1 icon-responsive"></i>
       <span class="text-responsive">กิจกรรมที่ลงทะเบียน</span>
     </a>
   </li>
@@ -34,33 +34,33 @@
 /* Media queries for tablet screens */
 @media (max-width: 768px) {
   .icon-responsive {
-    font-size: 1.5rem; /* Smaller icon for tablet */
+    font-size: 1.4rem; /* Smaller icon for tablet */
   }
 
   .text-responsive {
-    font-size: 0.9rem; /* Smaller text for tablet */
+    font-size: 0.7rem; /* Smaller text for tablet */
   }
 }
 
 /* Media queries for mobile screens */
 @media (max-width: 576px) {
   .icon-responsive {
-    font-size: 1.5rem; /* Smaller icon for mobile */
+    font-size: 1.4rem; /* Smaller icon for mobile */
   }
 
   .text-responsive {
-    font-size: 0.8rem; /* Smaller text for mobile */
+    font-size: 0.7rem; /* Smaller text for mobile */
   }
 }
 
 /* Optional: Add horizontal scrolling for very small screens */
-@media (max-width: 400px) {
+@media (max-width: 350px) {
   .icon-responsive {
-    font-size: 1.5rem; /* Smaller icon for mobile */
+    font-size: 1.2rem; /* Smaller icon for mobile */
   }
 
   .text-responsive {
-    font-size: 0.8rem; /* Smaller text for mobile */
+    font-size: 0.6rem; /* Smaller text for mobile */
   }
 }
 </style>
