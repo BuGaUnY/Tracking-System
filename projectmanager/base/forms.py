@@ -32,7 +32,7 @@ class ProfileForm(forms.ModelForm):
 
         self.fields['degree'].label = "ระดับชั้น"      
 
-        self.fields['room'].label = "ห้อง"
+        self.fields['room'].label = "ห้อง #รูปแบบการกรอก เช่น A1 B2 C3"
         
         self.fields['department'].label = "แผนก"
         

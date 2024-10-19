@@ -64,11 +64,6 @@ INSTALLED_APPS = [
     'base',
 ]
 
-
-# CRISPY_ALLOWED_TEMPLATE_PACKS = "tailwind"
-
-# CRISPY_TEMPLATE_PACK = "tailwind"
-
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 
 CRISPY_TEMPLATE_PACK = "bootstrap5"
