@@ -36,6 +36,7 @@ CSRF_TRUSTED_ORIGINS = [
 ALLOWED_HOSTS = [
     'ctc-sats.ngrok.io', 
     'localhost', '127.0.0.1', 
+    'http://152.42.255.83/',
 ]
 
 INSTALLED_APPS = [

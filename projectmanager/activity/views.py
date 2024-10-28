@@ -515,7 +515,7 @@ def attendance_report(request, pk):
             departments.add(record.department)
 
         # Prepare progress report with attendance percentage
-        sorted_attendance_count = dict(sorted(attendance_count.items()))  # Sort by student_number
+        sorted_attendance_count = dict(sorted(attendance_count.items(), key=lambda item: (item[0] is None, item[0]))) # Sort by student_number
         for student_number, data in sorted_attendance_count.items():
             total_attendance = data['present'] + data['absent']
             attendance_percentage = (data['present'] / total_attendance * 100) if total_attendance > 0 else 0

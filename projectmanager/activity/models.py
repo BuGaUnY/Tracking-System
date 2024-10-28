@@ -51,7 +51,7 @@ class AttendanceCheckin(models.Model):
         )
 
     def __str__(self):
-        return f'{self.att_name} {self.first_name} {self.last_name} {self.department} {self.room} {self.date_checkin} '
+        return f'{self.att_name} {self.room} {self.department} {self.first_name} {self.last_name}  {self.date_checkin}'
 
     def save(self, *args, **kwargs):
         if self.user:
@@ -116,7 +116,7 @@ class Activity(models.Model):
     date_create = models.DateTimeField(auto_now_add=True, blank=False)
 
     def __str__(self):
-        return f'{self.title} - {self.activity_category}'
+        return f'{self.activity_category} {self.title}'
 
     def get_absolute_url(self):
         return reverse('activity-detail', kwargs={'pk': self.pk})

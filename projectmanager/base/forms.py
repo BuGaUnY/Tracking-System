@@ -28,11 +28,11 @@ class ProfileForm(forms.ModelForm):
         self.fields['email'].required = True
         self.fields['email'].label = "อีเมล์"
 
-        self.fields['student_number'].label = "รหัสประจำตัว"
+        self.fields['student_number'].label = "รหัสนักเรียน นักศึกษา"
 
         self.fields['degree'].label = "ระดับชั้น"      
 
-        self.fields['room'].label = "ห้อง #รูปแบบการกรอก เช่น A1 B2 C3"
+        self.fields['room'].label = "ห้อง (รูปแบบการกรอก เช่น A1 B2 C3)"
         
         self.fields['department'].label = "แผนก"
         

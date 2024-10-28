@@ -37,7 +37,6 @@
     </div>
 </form>
 
-<!-- Display progress reports only if room and department are selected -->
 {% if room_filter and department_filter %}
     {% if progress_reports %}
         {% for att_name, report in progress_reports.items %}

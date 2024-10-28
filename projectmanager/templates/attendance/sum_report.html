@@ -66,7 +66,9 @@
     </table>
     <div class="d-flex justify-content-between mt-3">
         <a href="{% url 'sum_report' %}" class="btn btn-warning">กลับ</a>
-        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="btn btn-success">ดาวน์โหลด Excel</a>
+        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="btn btn-success">
+            <i class="fa-solid fa-download"></i>
+            ดาวน์โหลด Excel</a>
     </div>
     {% else %}
         <p>ไม่พบข้อมูล</p>
