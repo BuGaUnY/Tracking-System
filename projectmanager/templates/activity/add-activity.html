@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block title %}<title>เพิ่มกิจกรรมพิเศษ</title>{% endblock %}
+
+{% block content %}
+<div class="card-body bg-body-tertiary p-4 rounded">
+        <h1 class="mb-2">เพิ่มกิจกรรมพิเศษ</h1>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{form|crispy}}
+            <!-- <p class="border p-2 bg-body-secondary rounded mt-2"><em>ติดต่อ : {{activity.organizer}}</em></p> -->
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-circle-plus"></i> บันทึก</button>
+            <a href="{% url 'activity-list' %}" class="btn btn-danger"><i class="fa-solid fa-xmark"></i> ยกเลิก</a>
+        </form>
+</div>
+{% endblock %}

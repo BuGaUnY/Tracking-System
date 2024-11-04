@@ -11,8 +11,8 @@
         <table class="table table-borderless">
             <thead>
               <tr>
-                <th scope="col">#</th>
-                <th scope="col">Activity</th>
+                <th scope="col">ลำดับ</th>
+                <th scope="col">ชื่อกิจกรรม</th>
                 <th scope="col">รายละเอียด</th>
               </tr>
             </thead>
@@ -20,7 +20,7 @@
                 {% for ticket in tickets %}
                     <tr>
                         <th scope="row">{{forloop.counter}}</th>
-                        <td>{{ticket.activity}}</td>
+                        <td>{{ticket.activity.title}}</td>
                         <td>
                             <a href="{{ticket.get_absolute_url}}" class="btn btn-success">รายละเอียด</a>
                         </td>

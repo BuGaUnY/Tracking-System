@@ -1,7 +1,55 @@
 from django import forms
-from .models import Ticket, AttendanceCheckin, Attendance
+from .models import Ticket, AttendanceCheckin, Attendance, Activity, Organizer
 from .models import Profile
 from django.forms import inlineformset_factory
+
+class OrganizerForm(forms.ModelForm):
+    owner = forms.ModelChoiceField(
+        queryset=Profile.objects.all(),
+        widget=forms.Select(attrs={'class': 'searchable-select'}),  # ใช้สำหรับกำหนดการค้นหา
+        label="ชื่อผู้ใช้"
+    )
+    class Meta:
+        model = Organizer
+        fields = '__all__'
+        exclude = ['address']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].label = "ตำแหน่ง"
+        self.fields['description'].label = "รายละเอียด"
+        self.fields['image'].label = "รูปภาพ"
+        self.fields['email'].label = "อีเมล์"
+        self.fields['phone'].label = "เบอร์โทรศัพท์"
+
+class ActivityForm(forms.ModelForm):
+    class Meta:
+        model = Activity
+        fields = '__all__'
+        exclude = ['status']
+
+        widgets = {
+            'date_start': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['image'].label = "รูปภาพ"
+        self.fields['title'].label = "ชื่อกิจกรรม"
+        self.fields['description'].label = "คำอธิบาย"
+        self.fields['detail'].label = "รายละเอียด"
+        self.fields['activity_category'].label = "หน่วยกิจ"
+        self.fields['date_start'].label = "วันที่ | เวลาที่จัดกิจกรรม"
+        self.fields['organizer'].label = "ผู้จัด"
+        self.fields['organizer1'].label = "ผู้จัด"
+        self.fields['organizer2'].label = "ผู้จัด"
+        self.fields['organizer3'].label = "ผู้จัด"
+        self.fields['organizer4'].label = "ผู้จัด"
+        self.fields['organizer5'].label = "ผู้จัด"
+        self.fields['organizer6'].label = "ผู้จัด"
+        self.fields['organizer7'].label = "ผู้จัด"
+        self.fields['organizer8'].label = "ผู้จัด"
+        self.fields['organizer9'].label = "ผู้จัด"
 
 class TicketForm(forms.ModelForm):
     class Meta:
@@ -18,11 +66,15 @@ class TicketForm(forms.ModelForm):
         self.fields['degree'].label = "ชั้นปี"
         self.fields['department'].label = "แผนก"
 
+        # Set fields to readonly
+        for field in self.fields:
+            self.fields[field].widget.attrs['readonly'] = 'readonly'
+
 class AttendanceCheckinForm(forms.ModelForm):
 
     PRESENCE_CHOICES = [
-        (True, 'Present'),
-        (False, 'Absent'),
+        (True, 'มา'),
+        (False, 'ขาด'),
     ]
 
     presence = forms.ChoiceField(

@@ -51,7 +51,7 @@
             <tbody>
                 {% for activity in ticket_summary %}
                 <tr>
-                    <td>{{ activity.activity }}</td>
+                    <td>{{ activity.activity.title }}</td>
                     <td>{{ activity.status }}</td>
                 </tr>
                 {% empty %}

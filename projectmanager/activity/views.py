@@ -9,8 +9,8 @@ from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from .forms import TicketForm, AttendanceCheckinForm
-from django.urls import reverse
+from .forms import TicketForm, AttendanceCheckinForm, OrganizerForm, ActivityForm
+from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
 import django_filters
@@ -22,11 +22,11 @@ from django.forms.models import modelformset_factory
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 import logging , uuid , re
 from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from django.views import View
 from django.db import transaction
 
 logger = logging.getLogger(__name__)
-
 
 def is_valid_uuid(value):
     try:
@@ -44,11 +44,32 @@ class Teacher(LoginRequiredMixin,ListView):
     def get_queryset(self):
         return Organizer.objects.filter(owner=self.request.user.profile)
 
+class AddOrganizerView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Organizer
+    form_class = OrganizerForm
+    template_name = 'activity/add-organizer.html'
+    success_url = reverse_lazy('organizer-list')  # Replace with the URL name you want to redirect to after saving
+    success_message = 'เพิ่มครูที่ปรึกษา | เจ้าหน้าที่เรียบร้อยแล้ว'
+
+class AddActivityView(LoginRequiredMixin, SuccessMessageMixin, CreateView):
+    model = Activity
+    form_class = ActivityForm
+    template_name = 'activity/add-activity.html'
+    success_url = reverse_lazy('activity-list')  # Replace with the URL name you want to redirect to after saving
+    success_message = 'เพิ่มกิจกรรมพิเศษเรียบร้อยแล้ว'
+
+class DeleteActivityView(LoginRequiredMixin, SuccessMessageMixin, DeleteView):
+    model = Activity
+    template_name = 'activity/confirm_delete.html'  # Create this template to confirm deletion
+    success_url = reverse_lazy('activity-list')  # Redirect to the activity list after deletion
+    success_message = 'ลบกิจกรรมพิเศษเรียบร้อยแล้ว'
+
 class OrganizerList(ListView):
     model = Organizer
     template_name = 'activity/organizer-list.html'
     context_object_name = 'organizers'
     ordering = ['-date_create']
+    paginate_by = 9
 
 class OrganizerDetail(DetailView):
     model = Organizer
@@ -123,7 +144,6 @@ class OrganizerOwnerDetail(LoginRequiredMixin, DetailView):
         )
         return context
     
-
 class OrganizerOwnerActivityCheckin(LoginRequiredMixin, TemplateView):
     template_name = 'activity/organizer-owner-activity-checkin.html'
 
@@ -748,22 +768,19 @@ def export_to_excel(request):
 
     # สรุปข้อมูลตั๋วและสถานะโดยรวม
     for student_number, report in progress_reports.items():
-        ticket_records = Ticket.objects.filter(student_number=student_number)  # Fetch tickets for each student
+        ticket_records = Ticket.objects.filter(student_number=student_number)
         total_units = 0
 
         if not ticket_records.exists():
-            # ถ้าไม่มีตั๋ว ให้สถานะโดยรวมเป็น "-"
             progress_reports[student_number]['overall_status'] = "-"
         else:
             for ticket in ticket_records:
                 if ticket.checkin:
-                    # เพิ่มหน่วยรวมตามหมวดหมู่กิจกรรม
                     if ticket.activity.activity_category == '2 หน่วยกิจ':
-                        total_units += 2  # 2 หน่วยสำหรับกิจกรรมใหญ่
+                        total_units += 2
                     elif ticket.activity.activity_category == '1 หน่วยกิจ':
-                        total_units += 1  # 1 หน่วยสำหรับกิจกรรมเล็ก
+                        total_units += 1
 
-            # กำหนดสถานะโดยรวมตามหน่วยกิจกรรมรวม
             if total_units >= 6:
                 progress_reports[student_number]['overall_status'] = "ผ"
             else:
@@ -775,33 +792,56 @@ def export_to_excel(request):
     worksheet.title = 'รายงานความก้าวหน้า'
 
     # ปรับขนาดความกว้างของคอลัมน์ (A ถึง H)
-    worksheet.column_dimensions['A'].width = 20  # รหัสประจำตัว
-    worksheet.column_dimensions['B'].width = 30  # ชื่อ-สกุล
-    worksheet.column_dimensions['C'].width = 30  # แผนก/ชั้น/กลุ่ม
-    worksheet.column_dimensions['D'].width = 15  # กิจกรรมเข้าแถว
-    worksheet.column_dimensions['E'].width = 15  # กิจกรรมชมรม
-    worksheet.column_dimensions['F'].width = 15  # กิจกรรมโฮมรูมห
-    worksheet.column_dimensions['G'].width = 15  # กิจกรรมพิเศษ
-    worksheet.column_dimensions['H'].width = 15  # กิจกรรมลูกเสือ
+    worksheet.column_dimensions['A'].width = 20
+    worksheet.column_dimensions['B'].width = 30
+    worksheet.column_dimensions['C'].width = 30
+    worksheet.column_dimensions['D'].width = 15
+    worksheet.column_dimensions['E'].width = 15
+    worksheet.column_dimensions['F'].width = 15
+    worksheet.column_dimensions['G'].width = 15
+    worksheet.column_dimensions['H'].width = 15
 
-    # เขียนหัวตาราง
-    worksheet.append(['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ'])
+    # เพิ่มสีและจัดเส้นขอบให้หัวตาราง พร้อมฟอนต์
+    header_fill = PatternFill(start_color="FFD966", end_color="FFD966", fill_type="solid")
+    border_style = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+    header_font = Font(name='Arial', size=12, bold=True)  # ตั้งค่าฟอนต์และขนาดสำหรับหัวตาราง
+    cell_font = Font(name='Arial', size=11)  # ตั้งค่าฟอนต์และขนาดสำหรับข้อมูล
+
+    headers = ['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ']
+    worksheet.append(headers)
+
+    for col in worksheet[1]:
+        col.fill = header_fill
+        col.border = border_style
+        col.font = header_font
 
     # จัดเรียง student_number จากน้อยไปมาก
     sorted_progress_reports = sorted(progress_reports.items(), key=lambda item: int(item[0]) if item[0].isdigit() else float('inf'))
 
     # เขียนข้อมูลลงใน worksheet
     for student_number, details in sorted_progress_reports:
-        worksheet.append([
+        row_data = [
             student_number,
             details['name'],
             f"{details['room']} {details['department']}",
             details['activities']['line_up'],
             details['activities']['club'],
             details['activities']['homeroom'],
-            details['overall_status'],  # ใช้สถานะโดยรวมจากตั๋ว
+            details['overall_status'],
             details['activities']['scout'],
-        ])
+        ]
+        worksheet.append(row_data)
+
+        # เพิ่มเส้นขอบและฟอนต์ให้กับแต่ละเซลล์ในแถวข้อมูล
+        for cell in worksheet[worksheet.max_row]:
+            cell.border = border_style
+            cell.font = cell_font
+            cell.alignment = Alignment(horizontal="center", vertical="center")
 
     # สร้าง HttpResponse สำหรับส่งออกไฟล์ Excel
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

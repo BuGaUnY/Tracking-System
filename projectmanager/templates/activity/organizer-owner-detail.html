@@ -1,41 +1,72 @@
 {% extends 'base.html' %}
-
 {% load date_th %}
 
 {% block title %}<title>Organizer | Owner | {{organizer.name}}</title>{% endblock %}
 
-
 {% block content %}
 <div class="card">
-  <div class="text-center">
-    <img src="{{organizer.image.url}}" class="rounded-circle img-fluid" 
-    style="padding: 10px; height:250px; object-fit:scale-down;" 
-    alt="{{organizer.name}}">
-  </div>
+    <div class="text-center">
+        <img src="{{organizer.image.url}}" class="rounded-circle img-fluid" 
+        style="padding: 10px; height:250px; object-fit:scale-down;" 
+        alt="{{organizer.name}}">
+    </div>
     <div class="card-body">
         <h5 class="card-title">{{organizer.name}}</h5>
         <p class="card-text border p-2 bg-light rounded">{{organizer.description}}</p>
         <p class="card-text">เบอร์โทรศัพท์ : {{organizer.phone}}</p>
         <p class="card-text">email : {{organizer.email}}</p>
 
+        <a href="{% url 'add-activity' %}" class="btn btn-secondary">เพิ่มกิจกรรมพิเศษ</a>
+        <a href="{% url 'add-organizer' %}" class="btn btn-secondary">เพิ่มครูที่ปรึกษา | เจ้าหน้าที่</a>
+
         <table class="table">
             <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Activity</th>
-                <th scope="col"></th>
-              </tr>
+                <tr>
+                    <th scope="col">ลำดับ</th>
+                    <th scope="col">ชื่อกิจกรรม</th>
+                    <th scope="col"></th>
+                    <th scope="col"></th>
+                </tr>
             </thead>
             <tbody>
             {% for activity in activitys %}
-              <tr>
-                <th scope="row">{{forloop.counter}}</th>
-                <td><a href="{{activity.get_absolute_url}}" class="text-decoration-none">{{activity.title}}</a></td>
-                <td><a href="{{activity.get_absolute_owner_activity_checkin_url}}" class="btn btn-success">Check in</a></td>
-              </tr>
+                <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td><a href="{{ activity.get_absolute_url }}" class="text-decoration-none">{{ activity.title }}</a></td>
+                    <td><a href="{{ activity.get_absolute_owner_activity_checkin_url }}" class="btn btn-success">เช็คอิน</a></td>
+                    <td>
+                        <!-- Trigger delete modal -->
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ activity.pk }}">
+                            ลบกิจกรรม
+                        </button>
+                    </td>
+                </tr>
+
+                <!-- Delete Confirmation Modal -->
+                <div class="modal fade" id="deleteModal{{ activity.pk }}" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="deleteModalLabel">ลบกิจกรรมพิเศษ</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                คุณต้องการลบกิจกรรมพิเศษ "{{ activity.title }}" หรือไม่?
+                            </div>
+                            <div class="modal-footer">
+                                <form method="post" action="{% url 'activity-delete' activity.pk %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">ยืนยันการลบกิจกรรมพิเศษ</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             {% endfor %}
             </tbody>
-          </table>
+        </table>
     </div>
 </div>
+
 {% endblock %}

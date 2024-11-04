@@ -16,6 +16,8 @@ class ProfileForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['image'].required = True
+        self.fields['image'].label = "รูปภาพ"
+
         self.fields['first_name'].required = True
         self.fields['first_name'].label = "ชื่อจริง"
 

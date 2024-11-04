@@ -4,6 +4,9 @@ from django.shortcuts import redirect
 
 urlpatterns = [
     path('teacher/', views.Teacher.as_view(), name='teacher'),
+    path('activity/add-organizer/', views.AddOrganizerView.as_view(), name='add-organizer'),
+    path('activity/add-activity/', views.AddActivityView.as_view(), name='add-activity'),
+    path('activity/<int:pk>/delete/', views.DeleteActivityView.as_view(), name='activity-delete'),
     path('organizer/', views.OrganizerList.as_view(), name='organizer-list'),
     path('organizer/<int:pk>/', views.OrganizerDetail.as_view(), name='organizer-detail'),
     path('organizer/owner/', views.OrganizerOwnerList.as_view(), name='organizer-owner-list'),

@@ -35,26 +35,37 @@ class ProfielUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
 
     def get_success_url(self):
         return reverse('profile-detail')
-    
-class StudentListView(ListView):
-    model = Profile
-    template_name = 'base/students.html'
 
-class StudentFilter(django_filters.FilterSet):
-    degree = ChoiceFilter(choices=Profile.DEGREE_CHOICES, field_name='degree')
+class StudentFilter(FilterSet):
+    room = django_filters.CharFilter(field_name='room', lookup_expr='icontains')  # เพิ่มการค้นหาแบบไม่สนใจตัวพิมพ์ใหญ่
     department = ChoiceFilter(choices=Profile.DEPARTMENT_CHOICES, field_name='department')
+
     class Meta:
         model = Profile
-        fields = ['room', 'degree', 'department']
+        fields = ['room', 'department']
 
-    def __init__ (self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.filters['room'].label = 'ห้อง'
-        self.filters['degree'].label = 'ระดับชั้น'
         self.filters['department'].label = 'แผนก'
 
-class StudentSearch(FilterView):
-    template_name = 'base/student-search.html'
+class StudentSearchView(FilterView, ListView):
+    model = Profile
+    template_name = 'base/student-search.html'  # เปลี่ยนชื่อตามที่คุณใช้
     filterset_class = StudentFilter
+    context_object_name = 'object_list'  # ใช้สำหรับการอ้างอิงใน template
+
+    def get_queryset(self):
+        # เริ่มต้นด้วยการดึงโปรไฟล์ทั้งหมด โดยกรองค่า room และ department ที่เป็น None หรือว่าง
+        queryset = Profile.objects.exclude(room__isnull=True, room='').exclude(department__isnull=True, department='')
+
+        # ตรวจสอบการกรองจากฟิลด์ room และ department
+        if self.request.GET.get('room'):
+            queryset = queryset.filter(room=self.request.GET.get('room'))
+
+        if self.request.GET.get('department'):
+            queryset = queryset.filter(department=self.request.GET.get('department'))
+
+        return queryset.order_by('student_number')  # เรียงตาม student_number
 
 
