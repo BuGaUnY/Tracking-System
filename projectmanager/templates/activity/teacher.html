@@ -12,10 +12,11 @@
             </div>
             <div class="card-body">
                 <div class="d-grid gap-2">
-                    <a href="{% url 'student-search' %}" class="btn btn-primary"><i class="fa-solid fa-address-book"></i> รายชื่อ</a>
-                    <a href="{% url 'attendance_list' %}" class="btn btn-primary"><i class="fa-regular fa-pen-to-square"></i> เช็คชื่อ</a>
-                    <a href="{% url 'report_list' %}" class="btn btn-primary"><i class="fa-solid fa-file-pdf"></i> รายงาน</a>
-                    <a href="{% url 'sum_report' %}" class="btn btn-primary"><i class="fa-solid fa-file-export"></i> Export</a>
+                    <a href="{% url 'attendance_list' %}" class="btn btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i> เช็คชื่อ</a>
+                    <a href="{% url 'select_checkin' %}" class="btn btn-outline-secondary"><i class="fa-regular fa-pen-to-square"></i> เช็คชื่อย้อนหลัง</a>
+                    <a href="{% url 'daily_report' %}" class="btn btn-outline-secondary"><i class="fa-solid fa-list-check"></i> รายงานการเช็คชื่อรายวัน</a>
+                    <a href="{% url 'report_list' %}" class="btn btn-outline-secondary"><i class="fa-solid fa-file-pdf"></i> สรุปรายงานการเช็คชื่อ</a>
+                    <a href="{% url 'sum_report' %}" class="btn btn-outline-secondary"><i class="fa-solid fa-file-export"></i> พิมพ์สรุปรายงาน</a>
                 </div>
             </div>
         </div>

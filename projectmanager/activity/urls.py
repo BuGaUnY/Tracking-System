@@ -27,8 +27,11 @@ urlpatterns = [
     path('attendance/bulk_checkin/<int:pk>/', views.bulk_checkin, name='bulk_checkin'),
     path('report/<int:pk>/', views.attendance_report, name='attendance_report'),
     path('report/sum_report/', views.sum_report, name='sum_report'),
+    path('daily-report/', views.daily_report, name='daily_report'),
     path('report/self/', views.self_report, name='self_report'),
     path('report/export/', views.export_to_excel, name='export_to_excel'),
+    path('retroactive-checkin/', views.SelectCheckin.as_view(), name='select_checkin'),
+    path('retroactive-checkin/<int:pk>/', views.retroactive_checkin, name='retroactive_checkin'),
 ]
 
 def my_view(request, org_pk, ev_pk):

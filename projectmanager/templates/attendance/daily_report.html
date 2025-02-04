@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load date_th %}
+{% load static %}
+{% block content %}
+<h1 class="text-center">รายงานการเช็คชื่อรายวัน</h1>
+
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="room">ห้อง</label>
+            <select name="room" id="room" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for room in rooms %}
+                    <option value="{{ room }}" {% if room_filter == room %}selected{% endif %}>
+                        {{ room }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="department">แผนก</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for department in departments %}
+                    <option value="{{ department }}" {% if department_filter == department %}selected{% endif %}>
+                        {{ department }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="att_name">กิจกรรม</label>
+            <select name="att_name" id="att_name" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for att_name in att_names %}
+                    <option value="{{ att_name }}" {% if att_name_filter == att_name %}selected{% endif %}>
+                        {{ att_name }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="date_checkin">วันที่</label>
+            <input type="date" name="date_checkin" id="date_checkin" class="form-control" value="{{ date_filter }}">
+        </div>
+        <div class="col-md-12 text-center mt-3">
+            <button type="submit" class="btn btn-primary">ค้นหา</button>
+        </div>
+    </div>
+</form>
+
+<!-- เงื่อนไขตรวจสอบว่ามีตัวกรองถูกเลือกหรือไม่ -->
+{% if room_filter or department_filter or att_name_filter or date_filter %}
+    <table>
+        <thead>
+            <tr>
+                <th class="text-center">รหัสประจำตัว</th>
+                <th class="text-center">ชื่อ-สกุล</th>
+                <th class="text-center">ห้อง</th>
+                <th class="text-center">แผนก</th>
+                <th class="text-center">กิจกรรม</th>
+                <th class="text-center">วันที่</th>
+                <th class="text-center">สถานะ</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% if attendance_data %}
+                {% for record in attendance_data %}
+                <tr>
+                    <td>{{ record.student_number }}</td>
+                    <td>{{ record.first_name }} {{ record.last_name }}</td>
+                    <td>{{ record.room }}</td>
+                    <td>{{ record.department }}</td>
+                    <td>{{ record.att_name.att_name }}</td>
+                    <td>{{ record.date_checkin|date_th }}</td>
+                    <td class="text-center">
+                        {% if record.presence %}
+                            <span style="color: green;">มา</span>
+                        {% else %}
+                            <span style="color: red;">ขาด</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center;">ไม่มีข้อมูลการเช็กชื่อ</td>
+                </tr>
+            {% endif %}
+        </tbody>
+    </table>
+{% else %}
+    <p class="text-center text-muted">กรุณาเลือกเพื่อแสดงข้อมูล</p>
+{% endif %}
+
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+    th, td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+    }
+    th {
+        background-color: #9cdcff;
+    }
+    form {
+        margin-bottom: 20px;
+    }
+    button {
+        margin-left: 10px;
+        padding: 5px 10px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+</style>
+{% endblock %}

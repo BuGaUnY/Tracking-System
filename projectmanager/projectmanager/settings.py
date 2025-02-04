@@ -36,7 +36,6 @@ CSRF_TRUSTED_ORIGINS = [
 ALLOWED_HOSTS = [
     'ctc-sats.ngrok.io', 
     'localhost', '127.0.0.1', 
-    'http://152.42.255.83/',
 ]
 
 INSTALLED_APPS = [
@@ -200,8 +199,8 @@ SOCIALACCOUNT_LOGIN_ON_GET=True
 LOGIN_REDIRECT_URL = '/'
 
 # LINE
-channel_access_token = 'a0ztKsFaxNN4qCXVs8wJqO00mCg83mo4EVg6mc34SVYNW+zT6w7lct182ghiI/KXZHe7S2mwqdeyyRRFKF3qW+lNrUZ8TFpd8HHMnctKg1fFRyP/90wQc5jnXkDoXYhdYcmT51+aE9OWkOB5Eeym6gdB04t89/1O/w1cDnyilFU='
-channel_secret = '3de10640e83e4095694b337cda210c19'
+channel_access_token = 'aMxZ44EgIdqaW/MfNOsusKyTExVIkdOJX5LThO+4P+7CHZlPA1lRmwGMvHAZPAa6Wqt0+9aDCq9WJ7j1uANSGKlLm8j4XjjGTOEssANcNPfFKyK/yhCyrPn9R5zDf2a355G0dKNgQIFCAmJrxBhjnwdB04t89/1O/w1cDnyilFU='
+channel_secret = '167c64291a7a84de8749c785518b1cf0'
 
 SOCIALACCOUNT_PROVIDERS = {
     'line': {

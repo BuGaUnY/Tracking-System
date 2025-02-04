@@ -6,7 +6,7 @@
 <!-- Filter Form -->
 <form method="get" class="mb-4">
     <div class="row">
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label for="room">ห้อง</label>
             <select name="room" id="room" class="form-control">
                 <option value="">กรุณาเลือก</option>
@@ -17,7 +17,7 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4">
+        <div class="col-md-3">
             <label for="department">แผนก</label>
             <select name="department" id="department" class="form-control">
                 <option value="">กรุณาเลือก</option>
@@ -28,7 +28,20 @@
                 {% endfor %}
             </select>
         </div>
-        <div class="col-md-4 d-flex align-items-end mt-1">
+        <div class="col-md-3">
+            <label for="term">เทอม</label>
+            <select name="term" id="term" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                <option value="เทอม 1" {% if term_filter == 'เทอม 1' %}selected{% endif %}>เทอม 1</option>
+                <option value="เทอม 2" {% if term_filter == 'เทอม 2' %}selected{% endif %}>เทอม 2</option>
+                <option value="ภาคฤดูร้อน" {% if term_filter == 'ภาคฤดูร้อน' %}selected{% endif %}>ภาคฤดูร้อน</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="academic_year">ปีการศึกษา</label>
+            <input type="text" name="academic_year" id="academic_year" class="form-control" value="{{ academic_year_filter }}">
+        </div>
+        <div class="col-md-12 d-flex justify-content-end mt-2">
             <button type="submit" class="btn btn-primary">ค้นหา</button>
         </div>
     </div>
@@ -54,19 +67,59 @@
             <tr>
                 <td>{{ student_number }}</td>
                 <td>{{ report.name }}</td>
-                <td>{{ report.room }}{{ report.department }}</td>
-                <td>{{ report.activities.line_up }}</td>
-                <td>{{ report.activities.club }}</td>
-                <td>{{ report.activities.homeroom }}</td>
-                <td>{{ report.overall_status }}</td>
-                <td>{{ report.activities.scout }}</td>
+                <td class="text-center">{{ report.room }}{{ report.department }}</td>
+                <td class="text-center">
+                    {% if report.activities.line_up == "ผ่าน" %}
+                        <span style="color: green;">ผ่าน</span>
+                    {% elif report.activities.line_up == "ไม่ผ่าน" %}
+                        <span style="color: red;">ไม่ผ่าน</span>
+                    {% else %}
+                        <span style="color: gray;">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if report.activities.club == "ผ่าน" %}
+                        <span style="color: green;">ผ่าน</span>
+                    {% elif report.activities.club == "ไม่ผ่าน" %}
+                        <span style="color: red;">ไม่ผ่าน</span>
+                    {% else %}
+                        <span style="color: rgb(0, 0, 0);">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if report.activities.homeroom == "ผ่าน" %}
+                        <span style="color: green;">ผ่าน</span>
+                    {% elif report.activities.homeroom == "ไม่ผ่าน" %}
+                        <span style="color: red;">ไม่ผ่าน</span>
+                    {% else %}
+                        <span style="color: gray;">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if report.overall_status == "ผ่าน" %}
+                        <span style="color: green;">ผ่าน</span>
+                    {% elif report.overall_status == "ไม่ผ่าน" %}
+                        <span style="color: red;">ไม่ผ่าน</span>
+                    {% else %}
+                        <span style="color: gray;">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if report.activities.scout == "ผ่าน" %}
+                        <span style="color: green;">ผ่าน</span>
+                    {% elif report.activities.scout == "ไม่ผ่าน" %}
+                        <span style="color: red;">ไม่ผ่าน</span>
+                    {% else %}
+                        <span style="color: gray;">-</span>
+                    {% endif %}
+                </td>          
             </tr>
         {% endfor %}
         </tbody>
     </table>
     <div class="d-flex justify-content-between mt-3">
         <a href="{% url 'sum_report' %}" class="btn btn-warning">กลับ</a>
-        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&date_checkin={{ date_checkin }}" class="btn btn-success">
+        <a href="{% url 'export_to_excel' %}?room={{ room_filter }}&department={{ department_filter }}&term={{ term_filter }}&academic_year={{ academic_year_filter }}" class="btn btn-success">
             <i class="fa-solid fa-download"></i>
             ดาวน์โหลด Excel</a>
     </div>

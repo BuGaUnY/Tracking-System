@@ -60,8 +60,22 @@
                     <td>{{ item.department }}</td>
                     <td class="text-center">{{ item.present }}</td>
                     <td class="text-center">{{ item.absent }}</td>
-                    <td class="text-center">{{ item.percentage }}</td>
-                    <td class="text-center">{{ item.status }}</td>
+                    <td class="text-center">
+                        {% if item.percentage >= 60 %}
+                            <span style="color: green;">{{ item.percentage }}%</span>
+                        {% else %}
+                            <span style="color: red;">{{ item.percentage }}%</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if item.status == "ผ่าน" %}
+                            <span style="color: green;">ผ่าน</span>
+                        {% elif item.status == "ไม่ผ่าน" %}
+                            <span style="color: red;">ไม่ผ่าน</span>
+                        {% else %}
+                            <span style="color: gray;">-</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endif %}
                 {% endfor %}

@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load date_th %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    <title>เช็คชื่อย้อนหลัง | {{ attendance.att_name }}</title>
+{% endblock %}
+
+{% block content %}
+<h1 class="text-center">เช็คชื่อย้อนหลัง {{ attendance.att_name }}</h1>
+
+<form method="get" class="mb-4">
+    <div class="row">
+        <div class="col-md-3">
+            <label for="date_checkin">เลือกวันที่</label>
+            <input type="date" id="date_checkin" name="date_checkin" class="form-control" value="{{ selected_date|date:"Y-m-d" }}">
+        </div>
+        <div class="col-md-3">
+            <label for="room">ห้อง</label>
+            <select name="room" id="room" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for room in unique_rooms %}
+                    <option value="{{ room.room }}" {% if room.room == room_filter %}selected{% endif %}>
+                        {{ room.room }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="department">แผนก</label>
+            <select name="department" id="department" class="form-control">
+                <option value="">กรุณาเลือก</option>
+                {% for department in unique_departments %}
+                    <option value="{{ department.department }}" {% if department.department == department_filter %}selected{% endif %}>
+                        {{ department.department }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button type="submit" class="btn btn-primary mt-4">ค้นหา</button>
+        </div>
+    </div>
+</form>
+
+
+{% if room_filter and department_filter %}
+    {% if formset.total_form_count > 0 %}
+    <form method="post">
+        {% csrf_token %}
+        {{ formset.management_form }}
+        <div class="formset-container">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>รหัสประจำตัว</th>
+                        <th>ชื่อ-สกุล</th>
+                        <th>ห้อง</th>
+                        <th>ชั้นปี</th>
+                        <th>แผนก</th>
+                        <th>สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for form in formset %}
+                    <tr>
+                        <td>{{ form.student_number.value }}{{ form.student_number }}</td>
+                        <td>{{ form.first_name.value }} {{ form.last_name.value }} {{ form.first_name }} {{ form.last_name }}</td>
+                        <td class="text-center">{{ form.room.value }} {{ form.room }}</td>
+                        <td class="text-center">{{ form.degree.value }} {{ form.degree }}</td>
+                        <td>{{ form.department.value }} {{ form.department }}</td>
+                        <td class="text-center">
+                            {{ form.presence }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="d-flex justify-content-between mt-3">
+            <button class="btn btn-success" type="submit">บันทึกการเช็คชื่อ</button>
+            <a href="{% url 'attendance_list' %}" class="btn btn-warning">กลับ</a>
+        </div>
+    </form>
+    {% else %}
+    <p class="text-center">ไม่พบรายชื่อนักเรียน</p>
+    <a href="{% url 'attendance_list' %}" class="btn btn-warning">กลับ</a>
+    {% endif %}
+{% else %}
+<p class="text-center">กรุณาเลือกห้อง และแผนกเพื่อกรองข้อมูล</p>
+{% endif %}
+
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert {% if message.tags == 'success' %}alert-success{% elif message.tags == 'warning' %}alert-warning{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+{% endif %}
+
+<style>
+    table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    th,
+    td {
+        padding: 5px;
+        border: 1px solid #ddd;
+    }
+
+    th {
+        text-align: center;
+        background-color: #f0f0f0;
+    }
+
+    h1 {
+        text-align: center;
+    }
+</style>
+
+{% endblock %}

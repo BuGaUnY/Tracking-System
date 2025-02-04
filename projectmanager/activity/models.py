@@ -24,6 +24,9 @@ class Attendance(models.Model):
 
     def get_absolute_url(self):
         return reverse('bulk_checkin', kwargs={'pk': self.pk})
+    
+    def get_absolute_select_url(self):
+        return reverse('retroactive_checkin', kwargs={'pk': self.pk})
 
     def get_absolute_report_url(self):
         return reverse('attendance_report', kwargs={'pk': self.pk})
@@ -41,7 +44,7 @@ class AttendanceCheckin(models.Model):
     degree = models.CharField(max_length=10, null=True,blank=True)
     department = models.CharField(max_length=50, null=True,blank=True)
     att_name = models.ForeignKey(Attendance, on_delete=models.CASCADE)
-    date_checkin = models.DateField(auto_now=True, blank=False)
+    date_checkin = models.DateField(null=True, blank=True)
     presence = models.BooleanField(default=False)
 
     class Meta:

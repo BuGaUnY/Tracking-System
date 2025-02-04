@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load date_th %}
+{% load tz %}
+
+{% block title %}<title>Profile | {{ profile }}</title>{% endblock %}
+
+{% block content %}
+<div class="card-body bg-body-tertiary p-4 rounded">
+    <div class="text-center">
+        <img src="{{ profile.image.url }}" alt="avatar" class="rounded-circle img-fluid"
+            style="width: 150px; height:150px; object-fit: cover;">
+    </div>
+    <div class="border p-3 bg-body-secondary mt-3 mb-3 rounded">
+        <h5 class="my-3">{{ profile.first_name }} {{ profile.last_name }}</h5>
+        <p class="text-muted mb-1">รหัสนักเรียน-นักศึกษา : {{ profile.student_number }}</p>
+        <p class="text-muted mb-1">วัน-เดือน-ปีเกิด : {{ profile.birthday|date_th }}</p>
+        <p class="text-muted mb-1">ระดับชั้น : {{ profile.degree }}</p>
+        <p class="text-muted mb-1">ห้อง : {{ profile.room }}</p>
+        <p class="text-muted mb-1">แผนก : {{ profile.department }}</p>
+        <p class="text-muted mb-1">เบอร์โทร : {{ profile.phone }}</p>
+        <p class="text-muted mb-3">Email : {{ profile.email }}</p>
+        <p class="card-text">
+            สถานะโปรไฟล์:
+            {% if profile.status %}
+            <span class="text-success">ยืนยันแล้ว</span>
+            {% else %}
+            <span class="text-danger">ยังไม่ยืนยัน</span>
+            <button id="updateStatusBtn" class="btn btn-primary btn-sm">ยืนยันโปรไฟล์</button>
+            {% endif %}
+        </p>
+    </div>
+</div>
+
+<script>
+    document.getElementById("updateStatusBtn").addEventListener("click", function () {
+        const profilePk = "{{ profile.pk }}";  // ใช้ pk แทน uid
+        fetch(`/profile/verify/${profilePk}/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json",
+            },
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);  // แสดงข้อความสำเร็จ
+                    window.location.href = data.redirect_url;  // ไปยัง URL ของ profile-detail
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+    });
+</script>
+
+{% endblock %}
+

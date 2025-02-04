@@ -19,14 +19,26 @@
         <p class="card-text">Check in QR Code สำหรับผู้เข้าร่วมกิจกรรม</p>
         <div class="d-grid gap-2">
             <button type="button" class="btn btn-warning" onclick="startScanner()">
-                <i class="fa-solid fa-qrcode"></i> Scan QR Code</button>
+                <i class="fa-solid fa-qrcode"></i> สแกนคิวอาร์โค้ด</button>
+        </div>
+        <div class="d-grid gap-2 mt-3">
+            <button type="button" class="btn btn-danger" onclick="stopScanner()">
+                <i class="fa-solid fa-stop"></i> หยุดการสแกน
+            </button>
         </div>
     </div>
 </div>
 
 <div id="check-in-partials"></div>
 
-<form id="check-in" hx-get="{% url 'ticket-checkin' %}" hx-target="#check-in-partials" onsubmit="return handleSubmit(event)">
+<!-- ตัวโหลดระหว่างเช็คอิน -->
+<div id="loading-indicator" class="htmx-indicator" style="display: none;">กำลังตรวจสอบ...</div>
+
+<form id="check-in" 
+      hx-get="{% url 'ticket-checkin' %}" 
+      hx-target="#check-in-partials"
+      hx-trigger="submit"
+      hx-indicator="#loading-indicator">
     <input type="text" name="activity_uid" value="{{activity.uid}}" style="visibility:hidden">
     <input type="text" id="scanCode" name="ticket_uid" style="visibility:hidden">
     <button type="submit" id="clickButton" style="visibility:hidden">submit</button>
@@ -42,9 +54,16 @@
 <video id="qr-reader" style="width:100%;"></video>
 
 <script>
+    let codeReader;
+    let scanning = false; // ตัวแปรควบคุมสถานะการสแกน
+    let lastScannedCode = null; // เก็บ QR Code ที่สแกนล่าสุด
+
     function startScanner() {
-        const codeReader = new ZXing.BrowserQRCodeReader();
+        if (scanning) return; // ป้องกันการเริ่มต้นซ้ำ
+
+        codeReader = new ZXing.BrowserQRCodeReader();
         console.log('เริ่มต้นการอ่าน QR Code...');
+        scanning = true;
 
         const videoElement = document.getElementById('qr-reader');
         
@@ -61,66 +80,61 @@
 
         const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-        codeReader.decodeOnceFromVideoDevice(null, 'qr-reader')
-            .then((result) => {
+        codeReader.decodeFromVideoDevice(null, 'qr-reader', (result, err) => {
+            if (result && result.text !== lastScannedCode) {
+                lastScannedCode = result.text; // เก็บ QR Code ที่สแกนสำเร็จล่าสุด
                 console.log('QR Code ที่สแกน:', result.text);
 
                 if (uuidPattern.test(result.text)) {
                     document.getElementById("scanCode").value = result.text;
                     document.getElementById("clickButton").click();
-                } else {
-                    Swal.fire({
-                        position: 'center',
-                        icon: 'error',
-                        title: 'ข้อมูลที่สแกนไม่ถูกต้อง',
-                        text: 'ข้อมูล QR ไม่ตรงกับรูปแบบ UUID ที่คาดหวัง',
-                        showConfirmButton: true
-                    });
-                }
-            })
-            .catch((err) => {
-                console.error("ไม่สามารถอ่าน QR Code ได้:", err);
-                Swal.fire({
-                    position: 'center',
-                    icon: 'error',
-                    title: 'ไม่สามารถอ่าน QR Code ได้',
-                    text: 'เกิดข้อผิดพลาด: ' + err.message,
-                    showConfirmButton: true
-                });
-            });
+            }}
+        });
     }
 
-    function handleSubmit(event) {
-        event.preventDefault(); // ป้องกันการส่งฟอร์มแบบปกติ
+    function stopScanner() {
+        if (codeReader && scanning) {
+            codeReader.reset(); // รีเซ็ตการทำงานของ ZXing
+            scanning = false;
+            console.log('หยุดการอ่าน QR Code');
 
-        // ดึงข้อมูลจากฟอร์ม
-        const formData = new FormData(event.target);
-        const url = event.target.getAttribute('hx-get');
+            // ปิดกล้องโดยหยุด MediaStreamTrack
+            const videoElement = document.getElementById('qr-reader');
+            const stream = videoElement.srcObject;
 
-        fetch(url + '?' + new URLSearchParams(formData), {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest' // บอกว่าการร้องขอเป็น AJAX
+            if (stream) {
+                const tracks = stream.getTracks();
+                tracks.forEach(track => track.stop()); // หยุดกล้อง
+                videoElement.srcObject = null; // ล้างค่า srcObject
             }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error();
-            }
-            return response.text();
-        })
-        .then(data => {
-            document.getElementById('check-in-partials').innerHTML = data; // แสดงผลลัพธ์
-        })
-        .catch(error => {
-            console.error('เกิดข้อผิดพลาดในการส่งฟอร์ม:', error);
+        }
+    }
+
+    // ดักจับสถานะการตอบกลับจาก htmx
+    document.addEventListener("htmx:afterRequest", function(event) {
+        if (event.detail.xhr.status === 200) {
+            Swal.fire({
+                position: 'center',
+                icon: 'success',
+                title: 'สแกนสำเร็จ',
+                showConfirmButton: false,
+                timer: 1500
+            });
+        } else if (event.detail.xhr.status === 404) {
             Swal.fire({
                 position: 'center',
                 icon: 'error',
                 title: 'ข้อมูลไม่ถูกต้อง',
+                showConfirmButton: false
+            });
+        } else {
+            Swal.fire({
+                position: 'center',
+                icon: 'error',
+                title: 'เกิดข้อผิดพลาดในการสแกน',
                 showConfirmButton: true
             });
-        });
-    }
+        }
+    });
 </script>
 {% endblock %}

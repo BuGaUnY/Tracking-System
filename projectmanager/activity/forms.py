@@ -102,3 +102,6 @@ AttendanceCheckinFormSet = inlineformset_factory(
     can_delete=False
 )
 
+class ReportExportForm(forms.Form):
+    term = forms.CharField(label='เทอม', max_length=10, required=True)
+    academic_year = forms.CharField(label='ปีการศึกษา', max_length=10, required=True)

@@ -2,14 +2,14 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_POST
 from django.utils.dateparse import parse_date
-from django.db.models import Count, Q , Case, When, IntegerField
+from django.db.models import Count, Q , Case, When, IntegerField, F, Value
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, View, TemplateView
 from .models import Activity, Organizer , Attendance, AttendanceCheckin, Ticket
 from base.models import Profile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.contrib import messages
-from .forms import TicketForm, AttendanceCheckinForm, OrganizerForm, ActivityForm
+from .forms import TicketForm, AttendanceCheckinForm, OrganizerForm, ActivityForm, ReportExportForm
 from django.urls import reverse, reverse_lazy
 from django_filters.views import FilterView
 from django_filters import FilterSet, RangeFilter, DateRangeFilter, DateFilter, ChoiceFilter
@@ -25,6 +25,8 @@ from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
 from django.views import View
 from django.db import transaction
+from django.db.models.functions import Cast, Concat
+from django.db import models
 
 logger = logging.getLogger(__name__)
 
@@ -314,6 +316,7 @@ class TicketUpdate(LoginRequiredMixin, SuccessMessageMixin, UpdateView):
         return reverse('ticket-detail', kwargs={'pk': self.kwargs['pk']})
 
 class TicketCheckin(LoginRequiredMixin, View):
+    success_message = 'เช็คอินเรียบร้อยแล้ว'
     def get(self, request, *args, **kwargs):
         # ดึงค่าพารามิเตอร์จาก GET request
         activity_uid = request.GET.get('activity_uid')
@@ -366,11 +369,12 @@ class AttendanceList(ListView):
     context_object_name = 'attendances'
 
 def bulk_checkin(request, pk):
-    attendance = get_object_or_404(Attendance, pk=pk)  # ค้นหาบันทึกการเข้าร่วม
+    # ค้นหาบันทึกการเข้าร่วม
+    attendance = get_object_or_404(Attendance, pk=pk)
     room_filter = request.GET.get('room')
     department_filter = request.GET.get('department')
 
-    # เริ่มต้นด้วยการดึงโปรไฟล์ทั้งหมด โดยกรองค่า room และ department ที่เป็น None หรือว่าง
+    # ค้นหาข้อมูลโปรไฟล์ที่ไม่มีค่า null หรือค่าว่างใน 'room' และ 'department'
     profiles = Profile.objects.exclude(room__isnull=True, room='').exclude(department__isnull=True, department='')
 
     # กรองโปรไฟล์ตามห้องและแผนก
@@ -380,7 +384,12 @@ def bulk_checkin(request, pk):
     if department_filter:
         profiles = profiles.filter(department=department_filter)
 
-    # เรียงลำดับโปรไฟล์ตาม student_number จากน้อยไปมาก
+    # เรียงห้องตามลำดับตัวอักษร และตัวเลข A-Z, 1-9
+    profiles = profiles.annotate(
+        room_number=Cast(F('room'), output_field=models.CharField())
+    ).order_by('room_number')
+
+    # เรียงโปรไฟล์ตาม student_number
     profiles = profiles.order_by('student_number')
 
     # สร้าง FormSet สำหรับการบันทึก AttendanceCheckin
@@ -397,6 +406,8 @@ def bulk_checkin(request, pk):
 
         if formset.is_valid():
             instances = formset.save(commit=False)
+            saved_count = 0
+            skipped_count = 0
 
             for instance in instances:
                 instance.att_name = attendance
@@ -418,13 +429,18 @@ def bulk_checkin(request, pk):
                 ).exists()
 
                 if exists_by_student or exists_by_name:
-                    print(f"ข้ามการบันทึกข้อมูลซ้ำสำหรับหมายเลขนักเรียน: {instance.student_number} ในวันที่ {date_checkin}")
-                    continue  # ข้ามการบันทึกอินสแตนซ์นี้
+                    skipped_count += 1
+                    continue
 
-                # บันทึกเฉพาะเมื่อไม่มีข้อมูลซ้ำ
                 instance.save()
+                saved_count += 1
 
-            return redirect('report_list')  # เปลี่ยนเส้นทางไปยังหน้ารายงานหลังจากบันทึกข้อมูล
+            if saved_count > 0:
+                messages.success(request, f"บันทึกข้อมูลสำเร็จ {saved_count} รายการ")
+            if skipped_count > 0:
+                messages.warning(request, f"ข้ามการบันทึกข้อมูลซ้ำ {skipped_count} รายการ")
+
+            return redirect('report_list')
 
     else:
         # สร้างข้อมูลเริ่มต้นสำหรับฟอร์ม
@@ -436,12 +452,10 @@ def bulk_checkin(request, pk):
                 'room': profile.room,
                 'degree': profile.degree,
                 'department': profile.department,
-                'presence': True,
+                'presence': False,
             }
             for profile in profiles
         ]
-
-        # สร้างฟอร์มเซ็ตด้วยข้อมูลเริ่มต้นและไม่ใช้ queryset
         formset = AttendanceCheckinFormSet(initial=initial_data, queryset=AttendanceCheckin.objects.none())
 
     # ดึงข้อมูลโปรไฟล์แล้วกรองค่า room และ department ที่ซ้ำกัน
@@ -473,12 +487,10 @@ def bulk_checkin(request, pk):
         'room_filter': room_filter,
         'department_filter': department_filter
     })
-
 class ReportList(ListView):
     model = Attendance
     template_name = 'attendance/report_list.html'
     context_object_name = 'reports'
-
 
 def attendance_report(request, pk):
     # Fetch attendance record using the pk
@@ -600,6 +612,13 @@ def sum_report(request):
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
 
+    # รับค่าจาก term และ academic_year
+    term_filter = request.GET.get('term', '').strip()  # รับค่ากรองเทอม
+    academic_year_filter = request.GET.get('academic_year', '').strip()  # รับค่ากรองปีการศึกษา
+
+    # ฟอร์มกรอก term และ academic_year
+    report_form = ReportExportForm(request.GET)
+
     # วนรอบข้อมูลนักเรียนทั้งหมด
     for profile in all_profiles:
         student_number = profile.student_number
@@ -619,6 +638,8 @@ def sum_report(request):
                 'unit_count': 0,  # เริ่มนับหน่วยกิจกรรมสำหรับนักเรียน
                 'status': '-',  # สถานะเริ่มต้นคือ 'ไม่ผ่าน'
                 'overall_status': '-',  # สถานะโดยรวมเริ่มต้น
+                'term': term_filter,  # เพิ่มเทอม
+                'academic_year': academic_year_filter,  # เพิ่มปีการศึกษา
             }
 
     # วนรอบบันทึกการเข้าชั้นเรียน
@@ -719,10 +740,12 @@ def sum_report(request):
         'departments': sorted(departments),  # Now, sorted without None values
         'room_filter': room_filter,
         'department_filter': department_filter,
+        'term_filter': term_filter,  # เพิ่ม term_filter
+        'academic_year_filter': academic_year_filter,  # เพิ่ม academic_year_filter
+        'report_form': report_form,  # ส่งฟอร์มสำหรับกรอก term และ academic_year
     }
 
     return render(request, 'attendance/sum_report.html', context)
-
 
 def export_to_excel(request):
     # ดึงข้อมูลการเข้าร่วมทั้งหมด
@@ -732,6 +755,8 @@ def export_to_excel(request):
     # รับค่ากรองจาก request
     room_filter = request.GET.get('room', '').strip()
     department_filter = request.GET.get('department', '').strip()
+    term_filter = request.GET.get('term', '').strip()  # รับค่ากรองเทอม
+    academic_year_filter = request.GET.get('academic_year', '').strip()  # รับค่ากรองปีการศึกษา
 
     # วนลูปเพื่อดึงข้อมูลการเข้าร่วมแต่ละกิจกรรม
     for attendance in attendances:
@@ -760,6 +785,8 @@ def export_to_excel(request):
                         'scout': '-',
                     },
                     'overall_status': '-',
+                    'term': term_filter,  # เพิ่มเทอม
+                    'academic_year': academic_year_filter,  # เพิ่มปีการศึกษา
                 }
 
             # อัปเดตสถานะกิจกรรมใน activities ของนักเรียน
@@ -791,7 +818,7 @@ def export_to_excel(request):
     worksheet = workbook.active
     worksheet.title = 'รายงานความก้าวหน้า'
 
-    # ปรับขนาดความกว้างของคอลัมน์ (A ถึง H)
+    # ปรับขนาดความกว้างของคอลัมน์ (A ถึง I)
     worksheet.column_dimensions['A'].width = 20
     worksheet.column_dimensions['B'].width = 30
     worksheet.column_dimensions['C'].width = 30
@@ -800,6 +827,8 @@ def export_to_excel(request):
     worksheet.column_dimensions['F'].width = 15
     worksheet.column_dimensions['G'].width = 15
     worksheet.column_dimensions['H'].width = 15
+    worksheet.column_dimensions['I'].width = 20  # เพิ่มคอลัมน์สำหรับ Term และ Academic Year
+    worksheet.column_dimensions['J'].width = 20
 
     # เพิ่มสีและจัดเส้นขอบให้หัวตาราง พร้อมฟอนต์
     header_fill = PatternFill(start_color="FFD966", end_color="FFD966", fill_type="solid")
@@ -809,16 +838,17 @@ def export_to_excel(request):
         top=Side(style='thin'),
         bottom=Side(style='thin')
     )
-    header_font = Font(name='Arial', size=12, bold=True)  # ตั้งค่าฟอนต์และขนาดสำหรับหัวตาราง
-    cell_font = Font(name='Arial', size=11)  # ตั้งค่าฟอนต์และขนาดสำหรับข้อมูล
+    header_font = Font(name='Angsana New', size=16, bold=True)  # ใช้ฟอนต์ Angsana New สำหรับหัวตาราง
+    cell_font = Font(name='Angsana New', size=16)  # ใช้ฟอนต์ Angsana New สำหรับข้อมูล
 
-    headers = ['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ']
+    headers = ['รหัสประจำตัว', 'ชื่อ-สกุล', 'แผนก/ชั้น/กลุ่ม', 'กิจกรรมเข้าแถว', 'กิจกรรมชมรม', 'กิจกรรมโฮมรูม', 'กิจกรรมพิเศษ', 'กิจกรรมลูกเสือ', 'เทอม', 'ปีการศึกษา']
     worksheet.append(headers)
 
     for col in worksheet[1]:
         col.fill = header_fill
         col.border = border_style
         col.font = header_font
+        col.alignment = Alignment(horizontal="center", vertical="center")  # จัดกึ่งกลางหัวตาราง
 
     # จัดเรียง student_number จากน้อยไปมาก
     sorted_progress_reports = sorted(progress_reports.items(), key=lambda item: int(item[0]) if item[0].isdigit() else float('inf'))
@@ -834,6 +864,8 @@ def export_to_excel(request):
             details['activities']['homeroom'],
             details['overall_status'],
             details['activities']['scout'],
+            details['term'],  # เพิ่มข้อมูลเทอม
+            details['academic_year'],  # เพิ่มข้อมูลปีการศึกษา
         ]
         worksheet.append(row_data)
 
@@ -841,7 +873,7 @@ def export_to_excel(request):
         for cell in worksheet[worksheet.max_row]:
             cell.border = border_style
             cell.font = cell_font
-            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.alignment = Alignment(horizontal="center", vertical="center")  # จัดกึ่งกลางข้อมูลในแถว
 
     # สร้าง HttpResponse สำหรับส่งออกไฟล์ Excel
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -849,6 +881,56 @@ def export_to_excel(request):
     workbook.save(response)
 
     return response
+
+def daily_report(request):
+    # รับค่าตัวกรองจาก GET request
+    room_filter = request.GET.get('room', '').strip()
+    department_filter = request.GET.get('department', '').strip()
+    att_name_filter = request.GET.get('att_name', '').strip()
+    date_filter = request.GET.get('date_checkin', '').strip()
+
+    # ตรวจสอบว่ามีตัวกรองใดถูกเลือกหรือไม่
+    filters_selected = any([room_filter, department_filter, att_name_filter, date_filter])
+
+    # เรียกข้อมูลเฉพาะเมื่อมีตัวกรอง
+    attendance_data = AttendanceCheckin.objects.none()  # เริ่มต้นด้วย QuerySet ว่าง
+    if filters_selected:
+        attendance_data = AttendanceCheckin.objects.all()
+        if room_filter:
+            attendance_data = attendance_data.filter(room=room_filter)
+        if department_filter:
+            attendance_data = attendance_data.filter(department=department_filter)
+        if att_name_filter:
+            attendance_data = attendance_data.filter(att_name__att_name=att_name_filter)
+        if date_filter:
+            try:
+                date_checkin = datetime.strptime(date_filter, '%Y-%m-%d').date()
+                attendance_data = attendance_data.filter(date_checkin=date_checkin)
+            except ValueError:
+                messages.error(request, "รูปแบบวันที่ไม่ถูกต้อง โปรดใช้ YYYY-MM-DD.")
+
+        # เรียงตาม student_number จากน้อยไปมาก
+        attendance_data = attendance_data.order_by('student_number')
+
+    # ดึงค่าตัวเลือกสำหรับตัวกรอง
+    rooms = AttendanceCheckin.objects.values_list('room', flat=True).distinct()
+    departments = AttendanceCheckin.objects.values_list('department', flat=True).distinct()
+    att_names = AttendanceCheckin.objects.values_list('att_name__att_name', flat=True).distinct()
+
+    # Context ส่งไปที่ template
+    context = {
+        'attendance_data': attendance_data,
+        'rooms': sorted(filter(None, rooms)),
+        'departments': sorted(filter(None, departments)),
+        'att_names': sorted(filter(None, att_names)),
+        'room_filter': room_filter,
+        'department_filter': department_filter,
+        'att_name_filter': att_name_filter,
+        'date_filter': date_filter,
+        'filters_selected': filters_selected,  # ส่งตัวแปรไปที่ template
+    }
+
+    return render(request, 'attendance/daily_report.html', context)
 
 @login_required
 def self_report(request):
@@ -939,16 +1021,116 @@ def self_report(request):
         'overall_status': overall_status,  # ส่งสถานะโดยรวม
     })
 
+class SelectCheckin(ListView):
+    model = Attendance
+    template_name = 'attendance/select_checkin.html'
+    context_object_name = 'attendances'
 
+def retroactive_checkin(request, pk):
+    attendance = get_object_or_404(Attendance, pk=pk)
+    room_filter = request.GET.get('room', '').strip()
+    department_filter = request.GET.get('department', '').strip()
+    selected_date = request.GET.get('date_checkin')
 
+    # ตรวจสอบว่าผู้ใช้เลือกวันที่หรือไม่
+    if selected_date:
+        try:
+            selected_date = datetime.strptime(selected_date, "%Y-%m-%d").date()
+        except ValueError:
+            selected_date = None  # ถ้าเกิดข้อผิดพลาดให้มันเป็น None
+    else:
+        selected_date = None  # กรณีไม่ได้เลือกวันที่ใดๆ
 
+    # Filter profiles and exclude null/empty rooms and departments
+    profiles = Profile.objects.exclude(room__isnull=True).exclude(room='').exclude(department__isnull=True).exclude(department='')
 
+    if room_filter:
+        profiles = profiles.filter(room=room_filter)
 
+    if department_filter:
+        profiles = profiles.filter(department=department_filter)
 
+    profiles = profiles.order_by('room', 'department')
 
+    # Extract unique room and department values (distinct by room and department)
+    unique_rooms = Profile.objects.values('room').distinct().order_by('room')
+    unique_departments = Profile.objects.values('department').distinct().order_by('department')
 
+    AttendanceCheckinFormSet = modelformset_factory(
+        AttendanceCheckin,
+        form=AttendanceCheckinForm,
+        extra=len(profiles),
+        can_delete=False
+    )
 
+    if request.method == 'POST':
+        formset = AttendanceCheckinFormSet(request.POST)
 
+        if formset.is_valid():
+            instances = formset.save(commit=False)
+            saved_count = 0
+            skipped_count = 0
 
+            for instance in instances:
+                instance.att_name = attendance
 
+                # กำหนด date_checkin เป็น selected_date ที่ผู้ใช้เลือก
+                if selected_date:
+                    instance.date_checkin = selected_date
+                else:
+                    instance.date_checkin = timezone.now().date()  # หากไม่ได้เลือกวันที่ให้ใช้วันที่ปัจจุบัน
 
+                # ตรวจสอบข้อมูลซ้ำ
+                exists_by_student = AttendanceCheckin.objects.filter(
+                    student_number=instance.student_number,
+                    att_name=attendance,
+                    date_checkin=selected_date
+                ).exists()
+
+                exists_by_name = AttendanceCheckin.objects.filter(
+                    first_name=instance.first_name,
+                    last_name=instance.last_name,
+                    att_name=attendance,
+                    date_checkin=selected_date
+                ).exists()
+
+                if exists_by_student or exists_by_name:
+                    skipped_count += 1
+                    continue
+
+                instance.save()
+                saved_count += 1
+
+            # แสดงข้อความการบันทึกข้อมูล
+            if saved_count > 0:
+                messages.success(request, f"บันทึกข้อมูลสำเร็จ {saved_count} รายการ")
+            if skipped_count > 0:
+                messages.warning(request, f"ข้ามการบันทึกข้อมูลซ้ำ {skipped_count} รายการ")
+
+            return redirect('report_list')
+
+    else:
+        initial_data = [
+            {
+                'student_number': profile.student_number,
+                'first_name': profile.first_name,
+                'last_name': profile.last_name,
+                'room': profile.room,
+                'degree': profile.degree,
+                'department': profile.department,
+                'presence': False,
+                'date_checkin': selected_date if selected_date else timezone.now().date()  # ใช้วันที่เลือกหรือวันที่ปัจจุบัน
+            }
+            for profile in profiles
+        ]
+        formset = AttendanceCheckinFormSet(initial=initial_data, queryset=AttendanceCheckin.objects.none())
+
+    return render(request, 'attendance/retroactive_checkin.html', {
+        'formset': formset,
+        'attendance': attendance,
+        'room_filter': room_filter,
+        'department_filter': department_filter,
+        'selected_date': selected_date,
+        'unique_rooms': unique_rooms,  # unique room values for the filter
+        'unique_departments': unique_departments,  # unique department values for the filter
+    })

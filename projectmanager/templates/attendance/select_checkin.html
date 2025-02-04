@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load date_th %}
+{% load crispy_forms_tags %}
+{% block content %}
+<h1 class="text-center">เช็คชื่อย้อนหลัง</h1>
+<div class="row justify-content-center">
+    {% for attendance in attendances %}
+    <div class="col-md-2 mb-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title center">{{attendance.att_name}}</h5>
+                <a href="{{attendance.get_absolute_select_url}}" class="btn btn-primary">เช็คชื่อย้อนหลัง</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

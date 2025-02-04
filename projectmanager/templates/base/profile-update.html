@@ -1,9 +1,6 @@
 {% extends 'base.html' %}
-
 {% load crispy_forms_tags %}
-
 {% block title %}<title>Profile Update | {{profile}}</title>{% endblock %}
-
 
 {% block content %}
 <div class="card-body bg-body-tertiary p-4 rounded">
@@ -18,7 +15,6 @@
         <a href="{% url 'profile-detail' %}" class="btn btn-warning"><i class="fa-solid fa-rotate-left"></i> กลับ</a>
     </form>
 </div>
-
 
 <!-- mask -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"
